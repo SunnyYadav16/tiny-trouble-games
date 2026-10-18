@@ -9,7 +9,7 @@ Five puzzle games, built one at a time. Each has a daily puzzle; Word Path also 
 
 ## Current phase
 
-**Word Path**, rebuilt from scratch (the first build was deleted on 2026-10-18). Plan approved on 2026-10-18 (preview screens, 3D pavers, petal shower, difficulty levels); no code yet. Coding starts only when the user says so.
+**Word Path**, rebuilt from scratch (the first build was deleted on 2026-10-18). Plan approved on 2026-10-18 (preview screens, 3D pavers, petal shower, difficulty levels, Word Path page); no code yet. Coding starts only when the user says so.
 
 One game at a time. Do not start, scaffold, or stub the next game until the current one has shipped. Update this section when a phase ends.
 
@@ -117,7 +117,7 @@ PRODUCT.md, DESIGN.md     impeccable product context and design system (DESIGN.m
 ### Play modes and lifecycle (shared, built once in Word Path)
 - Daily: one puzzle per date, new at the player's local midnight, tied to the date it started. Streaks come from daily results only.
 - Unlimited: puzzle after puzzle with no daily limit. Own saved progress and stats; never touches daily results or streaks; no repeats until every puzzle has been seen.
-- Levels: Easy, Normal, Hard. Dailies are always Normal. Unlimited has a level switch; each level has its own pool, saved puzzle, and no-repeat cycle.
+- Levels: Easy, Normal, Hard. Dailies are always Normal. The Home card opens a Word Path page with today's daily and the three Unlimited levels; picking a level plays puzzle after puzzle at that level. Back from any game returns to that page, which is how players switch level (no switch on the play screen). Each level has its own pool, saved puzzle, and no-repeat cycle.
 - Save in-progress state after every action, keyed by mode. Reload never resets counters.
 - Timer runs only while the page is visible.
 - A finished daily reopens to its result, not a replay.
