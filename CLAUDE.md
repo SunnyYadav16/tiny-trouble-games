@@ -9,7 +9,7 @@ Five puzzle games, built one at a time. Each has a daily puzzle; Word Path also 
 
 ## Current phase
 
-**Word Path**, rebuilt from scratch (the first build was deleted on 2026-10-18). Plan written; no code yet.
+**Word Path**, rebuilt from scratch (the first build was deleted on 2026-10-18). Plan approved on 2026-10-18 (preview screens, 3D pavers, petal shower, difficulty levels); no code yet. Coding starts only when the user says so.
 
 One game at a time. Do not start, scaffold, or stub the next game until the current one has shipped. Update this section when a phase ends.
 
@@ -55,7 +55,7 @@ tools/wordlists/          builds the answer list and blocking list
 tools/generator/          puzzle store, candidate gates, verify and bench CLIs
 tools/content/            AI pipeline: proposer, reviewer, source fetch, refill CLI
 content/wordlists/        committed lists, README (sources, licenses, hashes), VERSION
-data/public/wordpath/     committed and deployed: <date>.json dailies, unlimited/<n>.json + index.json
+data/public/wordpath/     committed and deployed: <date>.json dailies, unlimited/<level>/<n>.json + index.json
 apps/web/                 React UI
   src/shared/             dates, safe storage, visibility timer, live region
   src/games/wordpath/
@@ -73,6 +73,7 @@ PRODUCT.md, DESIGN.md     impeccable product context and design system (DESIGN.m
 - Every puzzle stores `rulesVersion` (e.g. `wordpath/v1`) and is played and checked with that version only.
 - Puzzle generation is offline only. Browsers never generate puzzles and never call AI.
 - All randomness in engine and tools goes through the seeded rng, never `Math.random`.
+- Difficulty comes from the generator's level rules (route shape, near misses) and the clue style. Never from tile colors or other visual cues.
 - Mirror Collapse mask stays within 32 bits (18-bit pair mask). No BigInt unless pairing breaks.
 
 ### Data
@@ -80,6 +81,7 @@ PRODUCT.md, DESIGN.md     impeccable product context and design system (DESIGN.m
 - Every puzzle file records `meta.clueSource`, `meta.wordListVersion`, and `meta.generatorVersion`.
 - Never edit a puzzle file by hand. To replace a bad puzzle, delete its file and run `pnpm content refill`; refill never overwrites an existing file.
 - An answer is never reused, across dailies and unlimited.
+- Player stats and progress live only in this browser's `localStorage`; no accounts or sync. Every storage read and write goes through `apps/web/src/shared/storage.ts`, so sync can be added later in one place.
 - Word lists live in `content/wordlists/`. Any edit needs a new label in `VERSION`; then run `pnpm verify` and regenerate puzzles whose `wordListVersion` no longer matches.
 
 ### AI content
@@ -100,7 +102,7 @@ PRODUCT.md, DESIGN.md     impeccable product context and design system (DESIGN.m
 ### Desktop and mobile
 - A desktop browser is the primary target; phones must still work.
 - Detect the device with media queries (`(pointer: fine) and (hover: hover)`) and measured sizes. Never use the user-agent string.
-- Touch keeps the spec's board: 6×6 to 10×10. Mouse devices get more tiles, up to 12×12, chosen by board width and window height. Tiles stay 44–48px on both. Board size is locked for an attempt; only the tile scales after that.
+- Touch keeps the spec's board: 6×6 to 10×10, tiles 44–48px. Mouse devices get a 15×15 board with tiles 36–48px, falling back to the largest of 6×6–10×10 only when the window is too small. Board size is locked for an attempt; only the tile scales after that.
 
 ### Frontend design
 - Before any UI edit, load `/impeccable` and follow the direction contract in its surface brief. Use `/emil-design-eng` for motion and component details and `/design-taste-frontend-v1` for its bans and pre-flight check.
@@ -108,11 +110,14 @@ PRODUCT.md, DESIGN.md     impeccable product context and design system (DESIGN.m
 - GSAP is the only animation library. Use `useGSAP` with a `scope` ref and `contextSafe` for event-time tweens (`/gsap-skills:gsap-react`). Animate only `transform` and `opacity`. Simple state changes use CSS transitions.
 - Motion never gates the game: engine timers decide state, the next tap interrupts any animation, and reduced motion gets short fades. Demos play once and replay on request.
 - No emoji anywhere.
+- Tiles are 3D clay pavers drawn in CSS (domed face plus an offset side wall), not images or WebGL. The petal burst on a solve is decorative: `aria-hidden`, never blocks input (a click or key skips it), absent under reduced motion.
+- No mascot in v1. The hedgehog is parked in the plan's Later developments (L1); do not build or stub it until the user picks it up.
 - The §7.3 tile palette is pinned; changing it needs user sign-off.
 
 ### Play modes and lifecycle (shared, built once in Word Path)
 - Daily: one puzzle per date, new at the player's local midnight, tied to the date it started. Streaks come from daily results only.
 - Unlimited: puzzle after puzzle with no daily limit. Own saved progress and stats; never touches daily results or streaks; no repeats until every puzzle has been seen.
+- Levels: Easy, Normal, Hard. Dailies are always Normal. Unlimited has a level switch; each level has its own pool, saved puzzle, and no-repeat cycle.
 - Save in-progress state after every action, keyed by mode. Reload never resets counters.
 - Timer runs only while the page is visible.
 - A finished daily reopens to its result, not a replay.
