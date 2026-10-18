@@ -101,6 +101,39 @@ describe('routeShapeProblems', () => {
   });
 });
 
+// Pins every N18 value through its message. A straight route has 0 turns and
+// needs min(turns, length - 2), so a full-width row shows the required count.
+describe.each([
+  { size: 6, level: 'easy', turns: 1, nearMisses: 0 },
+  { size: 6, level: 'normal', turns: 2, nearMisses: 2, maxRun: 3 },
+  { size: 6, level: 'hard', turns: 3, nearMisses: 4, maxRun: 2 },
+  { size: 15, level: 'easy', turns: 1, nearMisses: 0 },
+  { size: 15, level: 'normal', turns: 3, nearMisses: 6, maxRun: 3 },
+  { size: 15, level: 'hard', turns: 4, nearMisses: 12, maxRun: 2 },
+] as const)('$level on a $size x $size board', (row) => {
+  const { size, level } = row;
+  const answer = 'CRANES'.repeat(3).slice(0, size);
+  const fullRow = Array.from({ length: size }, (_, i) => i);
+  const grid = gridWith(size, answer, fullRow);
+  const problems = qualityProblems(size, grid, answer, fullRow, level);
+
+  it(`needs ${row.turns} turns`, () => {
+    expect(problems).toContain(`route has 0 turns, needs ${row.turns}`);
+  });
+
+  it('limits straight runs', () => {
+    const run = problems.filter((p) => p.startsWith('route runs'));
+    expect(run).toEqual(
+      'maxRun' in row ? [`route runs ${size} tiles straight, max ${row.maxRun}`] : [],
+    );
+  });
+
+  it('asks for near misses', () => {
+    const misses = problems.filter((p) => p.includes('near misses'));
+    expect(misses).toEqual(row.nearMisses ? [`0 near misses, needs ${row.nearMisses}`] : []);
+  });
+});
+
 describe('qualityProblems', () => {
   const straight = [0, 1, 2, 3, 4];
 
