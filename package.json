@@ -1,0 +1,21 @@
+{
+  "name": "tiny-trouble-games",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.30.3",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @ttg/web dev",
+    "build": "pnpm --filter @ttg/web build",
+    "test": "vitest run",
+    "lint": "oxlint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "oxlint": "^1.88.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

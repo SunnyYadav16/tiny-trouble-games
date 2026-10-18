@@ -1,0 +1,7 @@
+{
+  "plugins": ["typescript", "react", "jsx-a11y", "vitest"],
+  "rules": {
+    "react/react-in-jsx-scope": "off"
+  },
+  "ignorePatterns": ["data/**", "dist"]
+}
