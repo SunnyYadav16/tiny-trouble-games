@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -25,10 +25,12 @@ describe('buildPuzzle', () => {
   });
 
   it('throws one error listing every problem', () => {
-    const noMango = { answers: new Set<string>(), blocking: lists.blocking };
-    expect(() => buildPuzzle(mango, { lists: noMango, version: 'v', id: 'x', seedKey: 'x', level: 'normal' })).toThrow(
-      /x failed verification[\s\S]*answer list/,
-    );
+    // ARRAY has 3 distinct letters and is missing from the answer list: two problems.
+    const array = { ...mango, answer: 'ARRAY' };
+    const run = () => buildPuzzle(array, { lists: { answers: new Set(), blocking: new Set() }, version: 'v', id: 'x', seedKey: 'x', level: 'normal' });
+    expect(run).toThrow(/x failed verification/);
+    expect(run).toThrow(/4 distinct letters/);
+    expect(run).toThrow(/answer list/);
   });
 });
 
@@ -76,6 +78,13 @@ describe('store', () => {
     const p = make(mango, 'wp-2026-11-01', 'normal', '2026-11-01');
     saveDaily(p, dir);
     expect(() => saveDaily(p, dir)).toThrow(join(dir, '2026-11-01.json'));
+
+    // One file already present, so the next number (2) is taken by a stray 2.json.
+    const taken = join(dir, 'unlimited/normal/2.json');
+    mkdirSync(join(dir, 'unlimited/normal'), { recursive: true });
+    writeFileSync(taken, 'keep me');
+    expect(() => saveUnlimited(make(cloud, 'wp-u-normal-2'), '2026-10-20', dir)).toThrow(taken);
+    expect(readFileSync(taken, 'utf8')).toBe('keep me');
   });
 
   it('numbers unlimited puzzles per level and writes the index', () => {
