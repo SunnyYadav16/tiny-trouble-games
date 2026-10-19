@@ -73,7 +73,7 @@ function fakes(script: Script = {}) {
     const scripted = script.source?.shift();
     return scripted === undefined ? `A page about the ${url.split('/').pop()}.` : scripted;
   });
-  const run = (extra: { maxTries?: number } = {}) => refill({ llm, fetchSource, today: TODAY, lists, version: 'test-1', dir, ...extra });
+  const run = (extra: { maxTries?: number; limit?: number } = {}) => refill({ llm, fetchSource, today: TODAY, lists, version: 'test-1', dir, ...extra });
   return { llm, fetchSource, log, run };
 }
 
@@ -245,6 +245,16 @@ describe('refill', () => {
     expect(f.llm.propose).toHaveBeenCalledTimes(1);
     expect(f.log).toEqual([]);
     expect(loadStore(dir).dailies).toHaveLength(28);
+  });
+
+  it('stops after --limit new puzzles are saved, dailies first, failed slots not counted', async () => {
+    seed({ skip: [0, 1, 2], counts: { easy: 39, normal: 39, hard: 39 } });
+    const f = fakes({ propose: Array.from({ length: 2 }, () => ({ answer: 'QUART' })) });
+    const report = await f.run({ maxTries: 2, limit: 2 });
+    expect(report.failed.map((s) => s.id)).toEqual([`wp-${TODAY}`]);
+    expect(report.created).toEqual([`wp-${addDays(TODAY, 1)}`, `wp-${addDays(TODAY, 2)}`]);
+    expect(f.llm.propose).toHaveBeenCalledTimes(4);
+    expect(loadStore(dir).unlimited.easy).toHaveLength(39);
   });
 
   it('records a thrown model error as a failed try', async () => {

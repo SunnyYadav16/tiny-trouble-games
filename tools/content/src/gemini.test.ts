@@ -89,8 +89,8 @@ describe('chooseProvider', () => {
     expect(clients).toHaveLength(before);
   });
 
-  it('throws a message naming both variables when neither is set', () => {
-    expect(() => chooseProvider({})).toThrow(/GEMINI_API_KEY.*ANTHROPIC_API_KEY/);
-    expect(() => chooseProvider({ GEMINI_API_KEY: '' })).toThrow(/GEMINI_API_KEY.*ANTHROPIC_API_KEY/);
+  it('throws a message naming every variable when none is set', () => {
+    expect(() => chooseProvider({})).toThrow(/OPENROUTER_API_KEY.*GEMINI_API_KEY.*ANTHROPIC_API_KEY/);
+    expect(() => chooseProvider({ GEMINI_API_KEY: '' })).toThrow(/OPENROUTER_API_KEY.*GEMINI_API_KEY.*ANTHROPIC_API_KEY/);
   });
 });

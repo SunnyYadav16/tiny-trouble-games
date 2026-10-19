@@ -29,6 +29,8 @@ export interface RefillOptions {
   fetchSource: typeof fetchSourceText;
   dir?: string;
   maxTries?: number;
+  /** Stop once this many new puzzles are saved in this run (a cheap trial). */
+  limit?: number;
 }
 
 interface Slot {
@@ -58,17 +60,18 @@ export async function refill(opts: RefillOptions): Promise<RefillReport> {
     report.created.push(slot.id);
     return true;
   };
+  const capped = () => report.created.length >= (opts.limit ?? Infinity);
 
   try {
     const dates = new Set(store.dailies.map((p) => p.date));
-    for (let i = 0; i < AHEAD_DAYS; i++) {
+    for (let i = 0; i < AHEAD_DAYS && !capped(); i++) {
       const date = addDays(today, i);
       if (!dates.has(date)) await fill({ id: `wp-${date}`, level: 'normal', date }, (p) => saveDaily(p, dir));
     }
 
     const target = unlimitedTarget(store.started ?? today, today);
     for (const level of wordpathV1.LEVELS) {
-      while (store.unlimited[level].length < target) {
+      while (!capped() && store.unlimited[level].length < target) {
         const id = nextUnlimitedId(store, level);
         const saved = await fill({ id, level }, (p) => {
           saveUnlimited(p, today, dir);
@@ -79,7 +82,7 @@ export async function refill(opts: RefillOptions): Promise<RefillReport> {
       }
     }
   } catch (e) {
-    // A refused key fails every later call too, so the run stops instead of burning maxTries per slot.
+    // A refused key (or no credits) fails every later call too, so the run stops instead of burning maxTries per slot.
     if (!(e instanceof LlmAuthError)) throw e;
     report.aborted = e.message;
   }

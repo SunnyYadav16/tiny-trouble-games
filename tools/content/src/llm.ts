@@ -31,13 +31,18 @@ export interface SolveRequest {
   letters: string;
 }
 
+/** Credits spent per call kind (one per refill stage that calls a model). */
+export type Spent = Record<'propose' | 'review' | 'solve', number>;
+
 /** Every model call goes through here, so tests use a fake and never the network. */
 export interface Llm {
   propose(r: ProposeRequest): Promise<Candidate>;
   review(r: ReviewRequest): Promise<Review>;
   /** Up to 3 uppercase guesses, best first. */
   solve(r: SolveRequest): Promise<string[]>;
+  /** Running totals, for providers that report the cost of each reply. */
+  readonly spent?: Readonly<Spent>;
 }
 
-/** The provider refused the API key (invalid, expired, or without permission). Refill stops the run on it. */
+/** The provider refused the API key (invalid, expired, without permission, or out of credits): every later call fails too, so refill stops the run on it. */
 export class LlmAuthError extends Error {}
