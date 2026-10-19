@@ -9,6 +9,7 @@
   "scripts": {
     "wordlists": "pnpm --filter @ttg/wordlists run",
     "content": "tsx tools/content/src/cli.ts",
+    "verify": "tsx tools/generator/src/verify.ts",
     "dev": "pnpm --filter @ttg/web dev",
     "build": "pnpm --filter @ttg/web build",
     "test": "vitest run",

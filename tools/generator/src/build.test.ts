@@ -63,6 +63,8 @@ describe('store', () => {
       dailies: [],
       unlimited: { easy: [], normal: [], hard: [] },
       started: null,
+      paths: new Map(),
+      indexCount: null,
     });
   });
 
@@ -71,7 +73,9 @@ describe('store', () => {
     saveDaily(p, dir);
     const text = readFileSync(join(dir, '2026-11-01.json'), 'utf8');
     expect(text).toBe(JSON.stringify(p, null, 2) + '\n');
-    expect(loadStore(dir).dailies).toEqual([p]);
+    const loaded = loadStore(dir);
+    expect(loaded.dailies).toEqual([p]);
+    expect(loaded.paths.get(loaded.dailies[0]!)).toBe('2026-11-01.json');
   });
 
   it('never overwrites a daily or an unlimited file', () => {
@@ -103,6 +107,8 @@ describe('store', () => {
     const store = loadStore(dir);
     expect(store.unlimited.normal).toEqual([a, b]);
     expect(store.started).toBe('2026-10-20');
+    expect(store.indexCount).toEqual({ easy: 0, normal: 2, hard: 1 });
+    expect(store.paths.get(store.unlimited.normal[1]!)).toBe('unlimited/normal/2.json');
     expect(nextUnlimitedId(store, 'normal')).toBe('wp-u-normal-3');
     expect(nextUnlimitedId(store, 'easy')).toBe('wp-u-easy-1');
   });
@@ -123,7 +129,7 @@ describe('store', () => {
   it('refuses to report used answers when one cannot be recovered', () => {
     const p = make(mango, 'wp-2026-11-01', 'normal', '2026-11-01');
     const bad = { ...p, checks: { ...p.checks, '8': [...p.checks['8']!].reverse().join('') } };
-    expect(() => usedAnswers({ dailies: [bad], unlimited: { easy: [], normal: [], hard: [] }, started: null })).toThrow(
+    expect(() => usedAnswers({ dailies: [bad], unlimited: { easy: [], normal: [], hard: [] }, started: null, paths: new Map(), indexCount: null })).toThrow(
       /wp-2026-11-01/,
     );
   });

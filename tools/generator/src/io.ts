@@ -8,7 +8,7 @@ type PuzzleBody = wordpathV1.PuzzleBody;
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url));
 export const PUBLIC_DIR = join(ROOT, 'data/public/wordpath');
-const WORDLIST_DIR = join(ROOT, 'content/wordlists');
+export const WORDLIST_DIR = join(ROOT, 'content/wordlists');
 
 const words = (file: string) =>
   new Set(readFileSync(join(WORDLIST_DIR, file), 'utf8').split('\n').map((w) => w.trim()).filter(Boolean));
@@ -24,6 +24,10 @@ export interface Store {
   dailies: PuzzleBody[];
   unlimited: Record<Level, PuzzleBody[]>;
   started: string | null;
+  /** Each loaded puzzle's path relative to the store dir, e.g. `unlimited/hard/3.json`. */
+  paths: Map<PuzzleBody, string>;
+  /** `count` from index.json; null when there is no index file. */
+  indexCount: Record<Level, number> | null;
 }
 
 const DAILY_FILE = /^\d{4}-\d{2}-\d{2}\.json$/;
@@ -43,23 +47,32 @@ function readPuzzle(path: string): PuzzleBody {
 
 const jsonFiles = (dir: string) => (existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.json')) : []);
 
-function readStarted(dir: string): string | null {
+function readIndex(dir: string): { started: string; count: Record<Level, number> } | null {
   const path = join(dir, 'unlimited/index.json');
-  return existsSync(path) ? (JSON.parse(readFileSync(path, 'utf8')).started as string) : null;
+  return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null;
 }
 
 export function loadStore(dir = PUBLIC_DIR): Store {
+  const paths = new Map<PuzzleBody, string>();
+  const read = (rel: string) => {
+    const p = readPuzzle(join(dir, rel));
+    paths.set(p, rel);
+    return p;
+  };
   const dailies = jsonFiles(dir)
     .filter((f) => DAILY_FILE.test(f))
     .sort()
-    .map((f) => readPuzzle(join(dir, f)));
+    .map(read);
   const unlimited = Object.fromEntries(
-    wordpathV1.LEVELS.map((level) => {
-      const levelDir = join(dir, 'unlimited', level);
-      return [level, jsonFiles(levelDir).sort(byNumber).map((f) => readPuzzle(join(levelDir, f)))];
-    }),
+    wordpathV1.LEVELS.map((level) => [
+      level,
+      jsonFiles(join(dir, 'unlimited', level))
+        .sort(byNumber)
+        .map((f) => read(`unlimited/${level}/${f}`)),
+    ]),
   ) as Record<Level, PuzzleBody[]>;
-  return { dailies, unlimited, started: readStarted(dir) };
+  const index = readIndex(dir);
+  return { dailies, unlimited, started: index?.started ?? null, paths, indexCount: index?.count ?? null };
 }
 
 /** Pretty JSON, created exclusively: an existing file is an error, never overwritten. */
@@ -83,7 +96,7 @@ export function saveUnlimited(p: PuzzleBody, today: string, dir = PUBLIC_DIR): v
   const count = Object.fromEntries(
     wordpathV1.LEVELS.map((l) => [l, jsonFiles(join(dir, 'unlimited', l)).length]),
   );
-  const started = readStarted(dir) ?? today;
+  const started = readIndex(dir)?.started ?? today;
   writeFileSync(join(dir, 'unlimited/index.json'), JSON.stringify({ count, started }, null, 2) + '\n');
 }
 
