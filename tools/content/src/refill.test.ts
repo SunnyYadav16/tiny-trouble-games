@@ -156,6 +156,9 @@ describe('refill', () => {
       expect.stringMatching(/plain definition/),
     ]);
     expect(report.rejections.review).toBe(3);
+    // A review rejection ends the try: solve runs only for the one candidate that passed.
+    expect(f.log).toEqual(['propose', 'review', 'propose', 'review', 'propose', 'review', 'propose', 'review', 'solve']);
+    expect(f.llm.solve).toHaveBeenCalledTimes(1);
   });
 
   it('accepts a plain definition at easy only', async () => {

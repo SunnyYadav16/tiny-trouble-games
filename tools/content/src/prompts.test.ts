@@ -8,6 +8,7 @@ describe('shared prompts', () => {
   it('asks the proposer for a word and a clue, with no web search or URL', () => {
     const prompt = proposePrompt({ topic: 'fruit', level: 'normal', avoid: [], rejected: [] });
     expect(prompt).toContain('{"answer": "WORD", "clue": "..."}');
+    expect(prompt).toMatch(/true and well established/);
     expect(prompt).not.toMatch(/https|url|search|source/i);
   });
 
@@ -16,7 +17,7 @@ describe('shared prompts', () => {
     expect(prompt).toContain('Word: MANGO');
     expect(prompt).toContain('Clue: A tropical fruit with a large stone');
     expect(prompt).toMatch(/general knowledge/);
-    expect(prompt).toMatch(/- accurate:/);
+    expect(prompt).toMatch(/- accurate: true only if.*False if any claim is wrong or you are not sure it is true\./);
     expect(prompt).not.toMatch(/page|source/i);
   });
 

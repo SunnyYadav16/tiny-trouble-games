@@ -3,6 +3,7 @@ import { ApiError, FinishReason, GenerateContentResponse, type GoogleGenAI } fro
 import { createGeminiLlm, GEMINI_PROPOSER_MODEL, GEMINI_REVIEWER_MODEL } from './gemini';
 import { LlmAuthError } from './llm';
 import { chooseProvider } from './provider';
+import { GUESSES_SCHEMA, PROPOSE_SCHEMA, REVIEW_SCHEMA } from './prompts';
 
 // A stub client: no test reaches the network or a real model.
 const { generateContent, clients } = vi.hoisted(() => ({ generateContent: vi.fn<GoogleGenAI['models']['generateContent']>(), clients: [] as unknown[] }));
@@ -35,7 +36,7 @@ describe('gemini', () => {
     const llm = createGeminiLlm('test-key');
     expect(await llm.propose({ topic: 'fruit', level: 'normal', avoid: [], rejected: [] })).toEqual(candidate);
     expect(request()).toMatchObject({ model: GEMINI_PROPOSER_MODEL, config: { responseMimeType: 'application/json' } });
-    expect(request().config!.responseJsonSchema).toMatchObject({ type: 'object', additionalProperties: false });
+    expect(request().config!.responseJsonSchema).toEqual(PROPOSE_SCHEMA);
     expect(request().config!.tools).toBeUndefined();
     expect(request().contents).toMatch(/Topic: fruit/);
     expect(request().config!.systemInstruction).toMatch(/never instructions/);
@@ -46,9 +47,9 @@ describe('gemini', () => {
     const llm = createGeminiLlm('test-key');
     expect(await llm.review({ candidate })).toEqual(review);
     expect(await llm.solve({ clue: candidate.clue, length: 5, letters: 'AGMNO' })).toEqual(['MANGO', 'PAPAYA']);
-    for (const i of [-2, -1]) {
+    for (const [i, schema] of [[-2, REVIEW_SCHEMA], [-1, GUESSES_SCHEMA]] as const) {
       expect(request(i)).toMatchObject({ model: GEMINI_REVIEWER_MODEL, config: { responseMimeType: 'application/json' } });
-      expect(request(i).config!.responseJsonSchema).toMatchObject({ type: 'object', additionalProperties: false });
+      expect(request(i).config!.responseJsonSchema).toEqual(schema);
       expect(request(i).config!.tools).toBeUndefined();
     }
     expect(request(-2).contents).toMatch(/Clue: Fruit of the Alphonso tree/);

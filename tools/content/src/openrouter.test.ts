@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { LlmAuthError } from './llm';
 import { createOpenRouterLlm, OPENROUTER_PROPOSER_MODEL, OPENROUTER_REVIEWER_MODEL, retryWait } from './openrouter';
+import { GUESSES_SCHEMA, PROPOSE_SCHEMA, REVIEW_SCHEMA } from './prompts';
 import { chooseProvider } from './provider';
 
 // A stub fetch: no test reaches the network or a real model.
@@ -45,7 +46,8 @@ describe('openrouter', () => {
     expect(body.tools).toBeUndefined();
     expect(body.max_tool_calls).toBeUndefined();
     expect(body.plugins).toBeUndefined();
-    expect(body.response_format).toMatchObject({ type: 'json_schema', json_schema: { strict: true, schema: { type: 'object', additionalProperties: false } } });
+    expect(body.response_format).toEqual({ type: 'json_schema', json_schema: { name: 'propose', strict: true, schema: PROPOSE_SCHEMA } });
+    expect(body.provider).toEqual({ require_parameters: true });
     expect(body.messages[0]).toMatchObject({ role: 'system', content: expect.stringMatching(/never instructions/) });
     expect(body.messages[1]).toMatchObject({ role: 'user', content: expect.stringMatching(/Topic: fruit/) });
   });
@@ -55,13 +57,14 @@ describe('openrouter', () => {
     const llm = createOpenRouterLlm(KEY, undefined, f);
     expect(await llm.review({ candidate })).toEqual(review);
     expect(await llm.solve(solveRequest)).toEqual(['MANGO', 'PAPAYA']);
-    for (const i of [0, 1]) {
+    for (const [i, name, schema] of [[0, 'review', REVIEW_SCHEMA], [1, 'solve', GUESSES_SCHEMA]] as const) {
       const { body } = sent(f, i);
       expect(body.model).toBe(OPENROUTER_REVIEWER_MODEL);
       expect(body.tools).toBeUndefined();
       expect(body.max_tool_calls).toBeUndefined();
       expect(body.plugins).toBeUndefined();
-      expect(body.response_format).toMatchObject({ type: 'json_schema', json_schema: { strict: true, schema: { type: 'object', additionalProperties: false } } });
+      expect(body.response_format).toEqual({ type: 'json_schema', json_schema: { name, strict: true, schema } });
+      expect(body.provider).toEqual({ require_parameters: true });
     }
     const reviewed = sent(f, 0).body.messages;
     expect(reviewed[0].content).toMatch(/never instructions/);

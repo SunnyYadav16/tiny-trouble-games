@@ -67,7 +67,7 @@ describe('parsePuzzle', () => {
   it('builds the result from validated fields only', () => {
     const raw = clone();
     raw.extra = 1;
-    raw.meta.source = 'https://example.com/old';
+    raw.meta.clueSource = 'https://example.com/old';
     expect(parsePuzzle(raw)?.puzzle).toEqual(p);
   });
 

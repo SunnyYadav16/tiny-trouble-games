@@ -24,7 +24,7 @@ export function proposePrompt({ topic, level, avoid, rejected }: ProposeRequest)
   return [
     `Topic: ${topic}`,
     'Pick one common English word related to the topic: 5 to 7 letters, A-Z only, a word most adults know.',
-    `Write an original one-sentence clue in your own words: ${CLUE_STYLE[level]}. The clue must not contain the word or any form of it.`,
+    `Write an original one-sentence clue in your own words: ${CLUE_STYLE[level]}. The clue must not contain the word or any form of it. Every fact in the clue must be true and well established: no obscure or disputed claims.`,
     `Do not use any of these words: ${banned.join(', ') || 'none'}.`,
     // Reasons are model-written text, so they are fenced as data.
     ...(rejected.length > 0
@@ -42,7 +42,7 @@ export function reviewPrompt({ candidate }: ReviewRequest): string {
     `Word: ${candidate.answer}`,
     `Clue: ${candidate.clue}`,
     'Judge the clue from general knowledge. Reply in JSON:',
-    '- accurate: true if every factual claim in the clue is true and the clue points to the word.',
+    '- accurate: true only if every factual claim in the clue is true and the clue points to the word. False if any claim is wrong or you are not sure it is true.',
     '- offensive: true if the word or the clue is offensive, crude, or hurtful.',
     '- plainDefinition: true if the clue is a dictionary definition of the word or a synonym of it.',
     '- reason: one short sentence.',

@@ -68,8 +68,8 @@ export function createOpenRouterLlm(
 
   /** One completion's text, as JSON in `schema`. Retries 408, 429, and 5xx; a refused key or no credits stops the run. */
   async function ask(stage: keyof Spent, model: string, messages: { role: 'system' | 'user'; content: string }[], schema: object): Promise<string> {
-    // Effort and output cap mirror the other backends and bound the cost of one call.
-    const body = JSON.stringify({ model, messages, max_tokens: 16_000, reasoning: { effort: 'medium' }, response_format: jsonSchema(stage, schema) });
+    // Effort and output cap mirror the other backends and bound the cost of one call. require_parameters routes only to providers that honor response_format.
+    const body = JSON.stringify({ model, messages, max_tokens: 16_000, reasoning: { effort: 'medium' }, provider: { require_parameters: true }, response_format: jsonSchema(stage, schema) });
     for (let attempt = 1; ; attempt++) {
       const res = await fetchFn(ENDPOINT, { method: 'POST', headers, body, signal: AbortSignal.timeout(TIMEOUT_MS) });
       if (res.ok) {

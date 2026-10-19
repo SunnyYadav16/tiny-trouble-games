@@ -3,6 +3,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { AuthenticationError, PermissionDeniedError, RateLimitError } from '@anthropic-ai/sdk';
 import { createAnthropicLlm, PROPOSER_MODEL, REVIEWER_MODEL } from './anthropic';
 import { LlmAuthError } from './llm';
+import { GUESSES_SCHEMA, PROPOSE_SCHEMA, REVIEW_SCHEMA } from './prompts';
 
 // A stub client: no test reaches the network or a real model.
 const { create } = vi.hoisted(() => ({ create: vi.fn<(params: Anthropic.MessageCreateParamsNonStreaming) => Promise<unknown>>() }));
@@ -40,10 +41,10 @@ describe('anthropic', () => {
     expect(await llm.solve({ clue: candidate.clue, length: 5, letters: 'AGMNO' })).toEqual(['MANGO']);
     const calls = create.mock.calls.slice(-3).map(([params]) => params);
     expect(calls.map((p) => p.model)).toEqual([PROPOSER_MODEL, REVIEWER_MODEL, REVIEWER_MODEL]);
-    for (const params of calls) {
-      expect(params.output_config).toMatchObject({ format: { type: 'json_schema', schema: { type: 'object', additionalProperties: false } } });
-      expect(params.tools).toBeUndefined();
-    }
+    [PROPOSE_SCHEMA, REVIEW_SCHEMA, GUESSES_SCHEMA].forEach((schema, i) => {
+      expect(calls[i]!.output_config!.format).toEqual({ type: 'json_schema', schema });
+      expect(calls[i]!.tools).toBeUndefined();
+    });
     expect(JSON.stringify(calls[0])).toMatch(/Topic: fruit/);
     expect(JSON.stringify(calls[2])).not.toMatch(/MANGO/);
   });
