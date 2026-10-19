@@ -15,7 +15,7 @@ export const LEVEL_RULES: Record<
 };
 
 const DESKTOP_SIZE = 15;
-const column = (size: number): 0 | 1 => (size === DESKTOP_SIZE ? 1 : 0);
+export const column = (size: number): 0 | 1 => (size === DESKTOP_SIZE ? 1 : 0);
 
 export function minLetterCount(size: number, distinct: number): number {
   return Math.ceil((size * size) / (2 * distinct));

@@ -1,6 +1,6 @@
 import { neighbors, sameRoute } from '../../shared/grid';
 import { randInt, rngFrom, shuffle, type Rng } from '../../shared/rng';
-import { qualityProblems, routeShapeProblems, type Level } from './quality';
+import { column, LEVEL_RULES, metrics, qualityProblems, routeShapeProblems, type Level } from './quality';
 import { findRoutes } from './routes';
 import { reverse } from './words';
 
@@ -9,6 +9,7 @@ export const SIZES = [6, 7, 8, 9, 10, 15] as const;
 
 const RANDOM_LETTER_CHANCE = 0.12;
 const WALK_DRAWS = 50;
+const PLANT_TRIES = 50;
 
 /** `key` is a date or an unlimited puzzle id. */
 export function seedFor(key: string, size: number): string {
@@ -59,34 +60,56 @@ function attempt(
   maxChanges: number,
 ): Omit<Generated, 'attempts'> | undefined {
   const letters = [...new Set(answer)];
-  const grid = Array.from({ length: size * size }, () => letters[randInt(rng, letters.length)]!);
+  let grid = Array.from({ length: size * size }, () => letters[randInt(rng, letters.length)]!);
   const solution = shapedWalk(rng, size, answer.length, level);
   if (!solution) return undefined;
   solution.forEach((cell, i) => (grid[cell] = answer[i]!));
   const locked = new Set(solution);
+  let changes = 0;
 
-  for (let changes = 0; ; changes++) {
-    const cells = grid.join('');
-    const others = findRoutes(size, cells, words).filter((r) => !sameRoute(r.route, solution));
-    if (others.length === 0) {
-      return qualityProblems(size, cells, answer, solution, level).length ? undefined : { cells, solution };
+  /** Changes unlocked cells until only the solution spells a word; false when stuck or out of changes. */
+  const repair = (): boolean => {
+    for (;;) {
+      const others = findRoutes(size, grid.join(''), words).filter((r) => !sameRoute(r.route, solution));
+      if (others.length === 0) return true;
+      if (changes++ >= maxChanges) return false;
+      const free = others[randInt(rng, others.length)]!.route.filter((cell) => !locked.has(cell));
+      if (free.length === 0) return false;
+      const cell = free[randInt(rng, free.length)]!;
+      // Shuffled, so options[0] is a random letter and the first minimum breaks ties randomly.
+      const options = shuffle(rng, letters.filter((letter) => letter !== grid[cell]));
+      if (rng() < RANDOM_LETTER_CHANCE) {
+        grid[cell] = options[0]!;
+        continue;
+      }
+      const counts = options.map((letter) => {
+        grid[cell] = letter;
+        return routesNear(size, grid, cell, words);
+      });
+      grid[cell] = options[counts.indexOf(Math.min(...counts))]!;
     }
-    if (changes === maxChanges) return undefined;
-    const free = others[randInt(rng, others.length)]!.route.filter((cell) => !locked.has(cell));
-    if (free.length === 0) return undefined;
-    const cell = free[randInt(rng, free.length)]!;
-    // Shuffled, so options[0] is a random letter and the first minimum breaks ties randomly.
-    const options = shuffle(rng, letters.filter((letter) => letter !== grid[cell]));
-    if (rng() < RANDOM_LETTER_CHANCE) {
-      grid[cell] = options[0]!;
-      continue;
-    }
-    const counts = options.map((letter) => {
-      grid[cell] = letter;
-      return routesNear(size, grid, cell, words);
+  };
+  if (!repair()) return undefined;
+
+  // Repair removes near misses along with extra routes, so plant them: write the answer
+  // minus its last letter on a free path, lock it, and keep it only if the grid repairs
+  // to one route again. That check makes every kept plant a dead end.
+  const prefix = answer.slice(0, -1);
+  const needed = LEVEL_RULES[level].nearMisses[column(size)];
+  for (let tries = 0; tries < PLANT_TRIES && metrics(size, grid.join(''), answer, solution).nearMisses < needed; tries++) {
+    const path = randomWalk(rng, size, prefix.length, locked);
+    const before = [...grid];
+    path.forEach((cell, i) => {
+      grid[cell] = prefix[i]!;
+      locked.add(cell);
     });
-    grid[cell] = options[counts.indexOf(Math.min(...counts))]!;
+    if (!repair()) {
+      grid = before;
+      path.forEach((cell) => locked.delete(cell));
+    }
   }
+  const cells = grid.join('');
+  return qualityProblems(size, cells, answer, solution, level).length ? undefined : { cells, solution };
 }
 
 /**
@@ -117,17 +140,19 @@ function shapedWalk(rng: Rng, size: number, length: number, level: Level): numbe
   return undefined;
 }
 
-function randomWalk(rng: Rng, size: number, length: number): number[] {
+/** A random self-avoiding walk that skips `avoid`; empty when its random start is boxed in. */
+function randomWalk(rng: Rng, size: number, length: number, avoid: ReadonlySet<number> = new Set()): number[] {
   const walk: number[] = [];
   const extend = (cell: number): boolean => {
     walk.push(cell);
     if (walk.length === length) return true;
     for (const next of shuffle(rng, neighbors(cell, size))) {
-      if (!walk.includes(next) && extend(next)) return true;
+      if (!walk.includes(next) && !avoid.has(next) && extend(next)) return true;
     }
     walk.pop();
     return false;
   };
-  extend(randInt(rng, size * size));
+  const open = [...Array(size * size).keys()].filter((cell) => !avoid.has(cell));
+  extend(open[randInt(rng, open.length)]!);
   return walk;
 }

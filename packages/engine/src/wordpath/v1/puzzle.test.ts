@@ -147,8 +147,10 @@ describe('verify', () => {
 
   it('reports an extra route spelling a blocked word', () => {
     const bad = clone();
-    // Spell AMONG along row 0 at size 6, overwriting whatever was there.
-    bad.grids['6'] = 'AMONG' + bad.grids['6'].slice(5);
+    // Spell AMONG along a 6×6 row the solution does not touch, so the answer stays recoverable.
+    const rows = new Set(decodeRoute(bad.checks['6']).map((cell) => Math.floor(cell / 6)));
+    const start = 6 * [0, 1, 2, 3, 4, 5].find((row) => !rows.has(row))!;
+    bad.grids['6'] = bad.grids['6'].slice(0, start) + 'AMONG' + bad.grids['6'].slice(start + 5);
     expect(verify(bad, lists).join('\n')).toMatch(/6×6/);
   });
 
