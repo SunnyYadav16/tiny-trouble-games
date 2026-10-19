@@ -1,0 +1,11 @@
+{
+  "name": "@ttg/generator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@ttg/engine": "workspace:*"
+  }
+}
