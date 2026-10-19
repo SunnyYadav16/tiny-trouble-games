@@ -31,7 +31,7 @@ describe('openrouter', () => {
     expect(f).not.toHaveBeenCalled();
   });
 
-  it('proposes on the proposer model with the web plugin and reads the JSON from the text', async () => {
+  it('proposes on the proposer model with the web search tool and reads the JSON from the text', async () => {
     const f = stub(respond(completion(`I found [example.com](https://example.com/mango).\n${JSON.stringify(candidate)}`)));
     expect(await createOpenRouterLlm(KEY, undefined, f).propose({ topic: 'fruit', level: 'normal', avoid: [], rejected: [] })).toEqual(candidate);
     const { url, init, headers, body } = sent(f);
@@ -41,13 +41,15 @@ describe('openrouter', () => {
     expect(headers.get('authorization')).toBe(`Bearer ${KEY}`);
     expect(headers.get('http-referer')).toBe('https://github.com/SunnyYadav16/tiny-trouble-games');
     expect(headers.get('x-openrouter-title')).toBe('Tiny Trouble Games');
-    expect(body).toMatchObject({ model: OPENROUTER_PROPOSER_MODEL, plugins: [{ id: 'web', engine: 'parallel', mode: 'turbo', max_results: 3 }] });
+    expect(body).toMatchObject({ model: OPENROUTER_PROPOSER_MODEL });
+    expect(body.tools).toEqual([{ type: 'openrouter:web_search', parameters: { engine: 'parallel', mode: 'turbo', max_results: 3, max_uses: 3 } }]);
+    expect(body.plugins).toBeUndefined();
     expect(body.response_format).toBeUndefined();
     expect(body.messages[0]).toMatchObject({ role: 'system', content: expect.stringMatching(/untrusted data/) });
     expect(body.messages[1]).toMatchObject({ role: 'user', content: expect.stringMatching(/Topic: fruit/) });
   });
 
-  it('reviews and solves on the reviewer model with a strict JSON schema and no plugins', async () => {
+  it('reviews and solves on the reviewer model with a strict JSON schema and no web search', async () => {
     const f = stub(respond(completion(JSON.stringify(review))), respond(completion('{"guesses": ["mango", "papaya"]}')));
     const llm = createOpenRouterLlm(KEY, undefined, f);
     expect(await llm.review({ candidate, sourceText: 'Alphonso is a mango.' })).toEqual(review);
@@ -55,6 +57,7 @@ describe('openrouter', () => {
     for (const i of [0, 1]) {
       const { body } = sent(f, i);
       expect(body.model).toBe(OPENROUTER_REVIEWER_MODEL);
+      expect(body.tools).toBeUndefined();
       expect(body.plugins).toBeUndefined();
       expect(body.response_format).toMatchObject({ type: 'json_schema', json_schema: { strict: true, schema: { type: 'object', additionalProperties: false } } });
     }
@@ -80,7 +83,7 @@ describe('openrouter', () => {
     }
   });
 
-  it('stops the run on a refused key or no credits, and never prints the key', async () => {
+  it('stops the run on 401, a plain 403 (no metadata), or 402, and never prints the key', async () => {
     const log = vi.spyOn(console, 'log');
     const error = vi.spyOn(console, 'error');
     for (const [status, message] of [[401, 'No auth credentials found'], [403, 'Key is disabled']] as const) {
@@ -98,11 +101,14 @@ describe('openrouter', () => {
     error.mockRestore();
   });
 
-  it('treats a moderation 403 as one failed try, not a refused key', async () => {
-    const flagged = { error: { code: 403, message: 'Input was flagged', metadata: { reasons: ['violence'], flagged_input: '...', provider_name: 'X', model_slug: 'x/y' } } };
-    const blocked = createOpenRouterLlm(KEY, undefined, stub(respond(flagged, 403))).review({ candidate, sourceText: 'x' });
-    await expect(blocked).rejects.toThrow(/flagged/);
-    await expect(blocked).rejects.not.toBeInstanceOf(LlmAuthError);
+  it('treats a moderation or guardrail 403 (with metadata) as one failed try, not a refused key', async () => {
+    const moderation = { reasons: ['violence'], flagged_input: '...', provider_name: 'X', model_slug: 'x/y' };
+    const guardrail = { patterns: ['ignore all previous instructions'] };
+    for (const metadata of [moderation, guardrail]) {
+      const blocked = createOpenRouterLlm(KEY, undefined, stub(respond({ error: { code: 403, message: 'Request blocked', metadata } }, 403))).review({ candidate, sourceText: 'x' });
+      await expect(blocked).rejects.toThrow(/blocked/);
+      await expect(blocked).rejects.not.toBeInstanceOf(LlmAuthError);
+    }
   });
 
   it('retries 429 and 5xx up to 3 tries, honoring Retry-After, then throws', async () => {

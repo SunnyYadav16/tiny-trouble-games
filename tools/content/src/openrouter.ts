@@ -23,8 +23,8 @@ export const OPENROUTER_REVIEWER_MODEL = 'google/gemini-3.1-flash-lite';
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 const TIMEOUT_MS = 120_000;
 const TRIES = 3;
-/** Parallel's turbo mode is the cheapest search engine ($0.001 a search, English). */
-const WEB = { id: 'web', engine: 'parallel', mode: 'turbo', max_results: 3 };
+/** OpenRouter's web search server tool on Parallel's turbo mode, the cheapest engine ($0.001 a search, English); at most 3 searches a call. */
+const WEB_SEARCH = { type: 'openrouter:web_search', parameters: { engine: 'parallel', mode: 'turbo', max_results: 3, max_uses: 3 } };
 
 interface OpenRouterError {
   message?: string;
@@ -86,9 +86,9 @@ export function createOpenRouterLlm(
 
   return {
     spent,
-    // The web plugin and JSON mode are not combined, so propose asks for JSON in the text like the other backends.
+    // Web search and JSON mode are not combined, so propose asks for JSON in the text like the other backends.
     propose: async (r) =>
-      parseCandidate(await ask('propose', models.proposer, [{ role: 'system', content: PROPOSE_SYSTEM }, { role: 'user', content: proposePrompt(r) }], { plugins: [WEB] })),
+      parseCandidate(await ask('propose', models.proposer, [{ role: 'system', content: PROPOSE_SYSTEM }, { role: 'user', content: proposePrompt(r) }], { tools: [WEB_SEARCH] })),
     review: async (r) =>
       parseReview(
         await ask('review', models.reviewer, [{ role: 'system', content: REVIEW_SYSTEM }, { role: 'user', content: reviewPrompt(r) }], {
