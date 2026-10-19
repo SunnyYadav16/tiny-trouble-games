@@ -7,6 +7,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "wordlists": "pnpm --filter @ttg/wordlists run",
     "dev": "pnpm --filter @ttg/web dev",
     "build": "pnpm --filter @ttg/web build",
     "test": "vitest run",
@@ -14,8 +15,10 @@
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
+    "@types/node": "^26.6.5",
     "fast-check": "^4.10.2",
     "oxlint": "^1.88.0",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
   }
