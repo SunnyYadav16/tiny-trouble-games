@@ -53,7 +53,7 @@ packages/engine/          pure rules, route finder, generator, schemas. No DOM, 
   src/wordpath/v1/        rules, routes, words, quality, generate, check, puzzle. Frozen once released.
 tools/wordlists/          builds the answer list and blocking list
 tools/generator/          puzzle store, candidate gates, verify and bench CLIs
-tools/content/            AI pipeline: proposer, reviewer, source fetch, refill CLI
+tools/content/            AI pipeline: proposer, reviewer, refill CLI
 content/wordlists/        committed lists, README (sources, licenses, hashes), VERSION
 data/public/wordpath/     committed and deployed: <date>.json dailies, unlimited/<level>/<n>.json + index.json
 apps/web/                 React UI
@@ -78,7 +78,7 @@ PRODUCT.md, DESIGN.md     impeccable product context and design system (DESIGN.m
 
 ### Data
 - There are no private records. Public puzzle files have no answer field, but the answer can be recovered from `checks` plus the grid. That is obfuscation for local checking, not security, and it is accepted while scores stay on the device. Hashing does not hide answers either. When leaderboards land, move checking to a server with its own private data.
-- Every puzzle file records `meta.clueSource`, `meta.wordListVersion`, and `meta.generatorVersion`.
+- Every puzzle file records `meta.wordListVersion`, `meta.generatorVersion`, and `meta.level`. Puzzles carry no source link (N26).
 - Never edit a puzzle file by hand. To replace a bad puzzle, delete its file and run `pnpm content refill`; refill never overwrites an existing file.
 - An answer is never reused, across dailies and unlimited.
 - Player stats and progress live only in this browser's `localStorage`; no accounts or sync. Every storage read and write goes through `apps/web/src/shared/storage.ts`, so sync can be added later in one place.
@@ -87,7 +87,7 @@ PRODUCT.md, DESIGN.md     impeccable product context and design system (DESIGN.m
 ### AI content
 - Only `tools/content` calls AI or depends on an AI SDK (`@google/genai`, `@anthropic-ai/sdk`).
 - `OPENROUTER_API_KEY`, `GEMINI_API_KEY`, and `ANTHROPIC_API_KEY` come from the environment only. Never write them to a file, a log, or a commit.
-- Proposer and reviewer are different models. Nothing is published unless every stage passes: deterministic gates; the source page is fetched and contains the answer; the reviewer finds the clue supported and not offensive; the reviewer solves the clue blind with the answer as its first guess; the built puzzle verifies and replays at every size.
+- Proposer and reviewer are different models. Nothing is published unless every stage passes: deterministic gates; the reviewer finds every fact in the clue true and the clue not offensive (no source page, N26); the reviewer solves the clue blind with the answer as its first guess; the built puzzle verifies and replays at every size.
 - Tests never call a real model or the network. AI sits behind the `Llm` interface with a fake.
 - Read the `claude-api` skill for current model IDs and tool names before changing `anthropic.ts`; fetch current Gemini or OpenRouter API docs (Context7) before changing `gemini.ts` or `openrouter.ts`.
 
