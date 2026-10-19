@@ -1,7 +1,7 @@
 import { wordpathV1 } from '@ttg/engine';
 import { UNLIMITED_INITIAL } from '@ttg/generator/config';
 import { loadLists, loadStore } from '@ttg/generator/io';
-import { createAnthropicLlm } from './anthropic';
+import { chooseProvider } from './provider';
 import { addDays, refill } from './refill';
 import { fetchSourceText } from './source';
 
@@ -11,19 +11,27 @@ if (process.argv[2] !== 'refill') {
   console.error('usage: pnpm content refill');
   process.exit(1);
 }
-const apiKey = process.env.ANTHROPIC_API_KEY;
-if (!apiKey) {
-  console.error('ANTHROPIC_API_KEY is not set. Export it in the environment; it is never read from a file.');
+let provider: ReturnType<typeof chooseProvider>;
+try {
+  provider = chooseProvider(process.env);
+} catch (e) {
+  console.error((e as Error).message);
   process.exit(1);
 }
+// Names and model IDs only: never a key or a request header.
+console.log(`provider ${provider.name}: proposer ${provider.proposer}, reviewer ${provider.reviewer}`);
 
 const today = new Date().toLocaleDateString('en-CA'); // local YYYY-MM-DD
 const { lists, version } = loadLists();
-const report = await refill({ llm: createAnthropicLlm(apiKey), today, lists, version, fetchSource: fetchSourceText });
+const report = await refill({ llm: provider.create(), today, lists, version, fetchSource: fetchSourceText });
 
 for (const id of report.created) console.log(`created ${id}`);
 for (const { id, reasons } of report.failed) console.log(`failed ${id}\n  ${reasons.join('\n  ')}`);
 console.log(`rejections: ${Object.entries(report.rejections).map(([stage, n]) => `${stage} ${n}`).join(', ')}`);
+if (report.aborted) {
+  console.error(`stopped: ${report.aborted}`);
+  process.exit(1);
+}
 
 const store = loadStore();
 const dates = new Set(store.dailies.map((p) => p.date));

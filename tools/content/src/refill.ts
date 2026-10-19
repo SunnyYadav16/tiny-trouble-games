@@ -3,7 +3,7 @@ import { buildPuzzle } from '@ttg/generator/build';
 import { AHEAD_DAYS, unlimitedTarget } from '@ttg/generator/config';
 import { candidateProblems, type Candidate } from '@ttg/generator/gates';
 import { loadStore, nextUnlimitedId, saveDaily, saveUnlimited, usedAnswers } from '@ttg/generator/io';
-import type { Llm } from './llm';
+import { LlmAuthError, type Llm } from './llm';
 import type { fetchSourceText } from './source';
 import { topicFor } from './topics';
 
@@ -16,6 +16,8 @@ export interface RefillReport {
   failed: { id: string; reasons: string[] }[];
   /** Failed tries per stage, to show what the run cost and where it was strict. */
   rejections: Record<Stage, number>;
+  /** Set when a model rejected the API key: the run stopped there. */
+  aborted?: string;
 }
 
 export interface RefillOptions {
@@ -57,26 +59,35 @@ export async function refill(opts: RefillOptions): Promise<RefillReport> {
     return true;
   };
 
-  const dates = new Set(store.dailies.map((p) => p.date));
-  for (let i = 0; i < AHEAD_DAYS; i++) {
-    const date = addDays(today, i);
-    if (!dates.has(date)) await fill({ id: `wp-${date}`, level: 'normal', date }, (p) => saveDaily(p, dir));
-  }
-
-  const target = unlimitedTarget(store.started ?? today, today);
-  for (const level of wordpathV1.LEVELS) {
-    while (store.unlimited[level].length < target) {
-      const id = nextUnlimitedId(store, level);
-      const saved = await fill({ id, level }, (p) => {
-        saveUnlimited(p, today, dir);
-        store.unlimited[level].push(p);
-      });
-      // Files are numbered in order, so a failed slot ends this level for the run.
-      if (!saved) break;
+  try {
+    const dates = new Set(store.dailies.map((p) => p.date));
+    for (let i = 0; i < AHEAD_DAYS; i++) {
+      const date = addDays(today, i);
+      if (!dates.has(date)) await fill({ id: `wp-${date}`, level: 'normal', date }, (p) => saveDaily(p, dir));
     }
+
+    const target = unlimitedTarget(store.started ?? today, today);
+    for (const level of wordpathV1.LEVELS) {
+      while (store.unlimited[level].length < target) {
+        const id = nextUnlimitedId(store, level);
+        const saved = await fill({ id, level }, (p) => {
+          saveUnlimited(p, today, dir);
+          store.unlimited[level].push(p);
+        });
+        // Files are numbered in order, so a failed slot ends this level for the run.
+        if (!saved) break;
+      }
+    }
+  } catch (e) {
+    // A refused key fails every later call too, so the run stops instead of burning maxTries per slot.
+    if (!(e instanceof LlmAuthError)) throw e;
+    report.aborted = e.message;
   }
   return report;
 }
+
+/** Google Search grounding cites through redirect links; meta.clueSource must name the page itself. */
+const SEARCH_REDIRECT = /vertexaisearch\.cloud\.google\.com|grounding-api-redirect/i;
 
 const normalize = (c: Candidate): Candidate => ({
   answer: c.answer.trim().toUpperCase(),
@@ -103,6 +114,7 @@ async function fillSlot(
       if (problems.length > 0) throw new Error(problems.join('; '));
 
       stage = 'source';
+      if (SEARCH_REDIRECT.test(c.clueSource)) throw new Error("source is a search redirect link, not the page itself; give the page's direct URL");
       const text = await fetchSource(c.clueSource);
       if (text === null) throw new Error(`source could not be fetched: ${c.clueSource}`);
       if (!text.toUpperCase().includes(c.answer)) throw new Error(`source does not contain ${c.answer}`);
@@ -125,6 +137,7 @@ async function fillSlot(
       const puzzle = buildPuzzle(c, { lists, version, id: slot.id, seedKey: slot.date ?? slot.id, level: slot.level, date: slot.date });
       return { puzzle, answer: c.answer };
     } catch (e) {
+      if (e instanceof LlmAuthError) throw e;
       const reason = (e as Error).message;
       report.rejections[stage]++;
       reasons.push(c ? `${stage} (${c.answer}): ${reason}` : `${stage}: ${reason}`);

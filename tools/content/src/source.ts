@@ -7,12 +7,16 @@ const MAX_BYTES = 1_000_000;
 const MAX_CHARS = 20_000;
 const TEXT_TYPES = new Set(['text/html', 'text/plain']);
 
-/** Loopback, private, link-local (incl. cloud metadata), CGNAT, unique-local, unspecified. IPv4-mapped IPv6 is checked against the IPv4 rules. */
+/**
+ * Loopback, private, link-local (incl. cloud metadata), CGNAT, reserved (240/4, incl. broadcast), unique-local,
+ * site-local, and the IPv6 forms that embed an IPv4 address (IPv4-compatible ::/96 incl. :: and ::1, NAT64, 6to4).
+ * IPv4-mapped IPv6 is checked against the IPv4 rules.
+ */
 const PRIVATE = new BlockList();
-for (const [net, bits] of [['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.168.0.0', 16]] as const) {
+for (const [net, bits] of [['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.168.0.0', 16], ['240.0.0.0', 4]] as const) {
   PRIVATE.addSubnet(net, bits, 'ipv4');
 }
-for (const [net, bits] of [['::', 128], ['::1', 128], ['fc00::', 7], ['fe80::', 10]] as const) PRIVATE.addSubnet(net, bits, 'ipv6');
+for (const [net, bits] of [['::', 96], ['64:ff9b::', 96], ['2002::', 16], ['fc00::', 7], ['fe80::', 10], ['fec0::', 10]] as const) PRIVATE.addSubnet(net, bits, 'ipv6');
 
 /** Resolves a hostname to every address it has. */
 export type Lookup = (host: string) => Promise<string[]>;

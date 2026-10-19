@@ -38,3 +38,6 @@ export interface Llm {
   /** Up to 3 uppercase guesses, best first. */
   solve(r: SolveRequest): Promise<string[]>;
 }
+
+/** The provider refused the API key (invalid, expired, or without permission). Refill stops the run on it. */
+export class LlmAuthError extends Error {}
