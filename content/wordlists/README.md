@@ -13,7 +13,7 @@ Rebuild with `pnpm wordlists build`. It downloads each pinned source into `node_
 
 SHA-256 of the committed files:
 
-- answers.txt: sha256 527eaa7eb3d5cf75bb395d345d7648349579ace65ad292c410a56a768942a39a
+- answers.txt: sha256 00b89880bb72e22b59d9dc5f7ae33d23c10c0c9dc73b3e65124672f1cb392ef4
 - blocking.txt: sha256 ccdc9eb4d2a54096fa34a8f9f2854b4f5b5f7f2167d528fe8a4348a1b413a188
 
 ## Sources
@@ -42,9 +42,9 @@ SHA-256 of the committed files:
 - `blocking.txt` = ENABLE union SCOWL levels up to 95 (`BLOCK_MAX_LEVEL`).
 - Parsing keeps only `^[a-z]+$` lines, uppercased: this drops capitalized proper nouns, all-caps abbreviations, accented words, and words with apostrophes or hyphens.
 - Both lists keep only 5 to 7 letter words, the answer lengths. The engine only queries the blocking list at the answer's length, so other lengths would be dead weight.
-- Answer exclusions (answers only; `blocking.txt` keeps these words so they can never be traced as a second route). 170 words are removed:
+- Answer exclusions (answers only; `blocking.txt` keeps these words so they can never be traced as a second route). 221 words are removed:
   - 21 come from SCOWL's taboo lists in `misc/`, all levels: `offensive.1`, `offensive.2` (racial slurs), `profane.1`, `profane.3` (vulgar and swear words). Mixed-case entries are lowercased before matching.
-  - 149 come from `exclude-answers.txt`, a hand-kept list (one uppercase word per line, sorted) of words SCOWL's taboo lists miss: slurs and vulgar terms (BITCH, PUSSY, BASTARD), and sensitive words a daily puzzle should never ask players to find, namely sexual anatomy, acts, and prostitution (PENIS, ORGASM, HOOKER), sexual violence and abuse (RAPIST, MOLEST, INCEST), suicide, and slurs or insults aimed at identity (GYPSY, MIDGET, QUEER). Every inflection of an excluded word goes too. Ordinary words with dark but non-graphic meanings (MURDER, DEATH, WEAPON) stay. Add a word there, rebuild, and bump `VERSION`.
+  - 200 come from `exclude-answers.txt`, a hand-kept list (one uppercase word per line, sorted) of words SCOWL's taboo lists miss: slurs and vulgar terms (BITCH, PUSSY, BASTARD), and sensitive words a daily puzzle should never ask players to find, namely sexual anatomy, acts, and prostitution (PENIS, ORGASM, HOOKER), sexual violence and abuse (RAPIST, MOLEST, INCEST), suicide, slurs or insults aimed at identity (GYPSY, MIDGET, QUEER), a sound-alike of a slur (NIGGLE and its forms), bodily and hygiene words (CERVIX, UTERUS, OVARY, TAMPON, ENEMA, FECES, URINE, HERPES, ORIFICE), drugs and nooses (COCAINE, HEROIN, ECSTASY, STONED, NOOSE, GALLOWS), painful history (SLAVERY, GHETTO, POGROM, COLORED), and mild insults (IDIOT, DUMBEST, LOONY, WEIRDO, REDNECK). Every inflection of an excluded word goes too. Ordinary words with dark but non-graphic meanings (MURDER, DEATH, WEAPON) stay. Add a word there, rebuild, and bump `VERSION`.
 - The build fails if any of AMONG, MANGA, MANNA, GAMMA, MAMMA is missing from `blocking.txt`.
 
 ## Attribution and license notices
