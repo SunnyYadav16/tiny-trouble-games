@@ -17,7 +17,7 @@ const POOL = ('CLOUD PLANT TIGER RIVER STORM PIANO TRAIN BREAD HONEY LEMON OCEAN
   'WHALE ZEBRA HORSE MOUSE SNAKE ROBIN PEACH GRAPE MELON OLIVE BACON PASTA PIZZA SALAD TOAST WAFFLE PICKLE ' +
   'CARROT POTATO TOMATO GARLIC GINGER BUTTER CHEESE YOGURT CEREAL MUFFIN COOKIE CHERRY ORANGE WALNUT ALMOND CASHEW').split(' ');
 const lists = { answers: new Set([...POOL, 'MANGO']), blocking: new Set([...POOL, 'MANGO']) };
-const mango: Candidate = { answer: 'MANGO', clue: 'A tropical fruit with a large stone', clueSource: 'https://example.com/mango' };
+const mango: Candidate = { answer: 'MANGO', clue: 'A tropical fruit with a large stone' };
 const base = buildPuzzle(mango, { lists, version: 'test-1', id: 'base', seedKey: 'base', level: 'normal' });
 
 let dir: string;
@@ -41,12 +41,11 @@ function seed({ skip = [] as number[], counts = { easy: 40, normal: 40, hard: 40
 
 interface Script {
   propose?: Partial<Candidate>[];
-  source?: (string | null)[];
   review?: Partial<Review>[];
   solve?: string[][];
 }
 
-/** A fake Llm and fetchSource. Each call takes the next scripted value, then falls back to a passing default. */
+/** A fake Llm. Each call takes the next scripted value, then falls back to a passing default. */
 function fakes(script: Script = {}) {
   const log: string[] = [];
   const answerOf = new Map<string, string>();
@@ -55,26 +54,21 @@ function fakes(script: Script = {}) {
     propose: vi.fn<Llm['propose']>(async (r) => {
       log.push('propose');
       const answer = POOL.find((w) => !r.avoid.includes(w) && !r.rejected.some((x) => x.answer === w))!;
-      const c = { answer, clue: `Puzzle clue number ${++n}`, clueSource: `https://example.com/${answer.toLowerCase()}`, ...script.propose?.shift() };
+      const c = { answer, clue: `Puzzle clue number ${++n}`, ...script.propose?.shift() };
       answerOf.set(c.clue.trim(), c.answer.trim().toUpperCase());
       return c;
     }),
     review: vi.fn<Llm['review']>(async () => {
       log.push('review');
-      return { supported: true, offensive: false, plainDefinition: false, reason: 'fine', ...script.review?.shift() };
+      return { accurate: true, offensive: false, plainDefinition: false, reason: 'fine', ...script.review?.shift() };
     }),
     solve: vi.fn<Llm['solve']>(async (r) => {
       log.push('solve');
       return script.solve?.shift() ?? [answerOf.get(r.clue)!];
     }),
   };
-  const fetchSource = vi.fn<(url: string) => Promise<string | null>>(async (url) => {
-    log.push('source');
-    const scripted = script.source?.shift();
-    return scripted === undefined ? `A page about the ${url.split('/').pop()}.` : scripted;
-  });
-  const run = (extra: { maxTries?: number; limit?: number } = {}) => refill({ llm, fetchSource, today: TODAY, lists, version: 'test-1', dir, ...extra });
-  return { llm, fetchSource, log, run };
+  const run = (extra: { maxTries?: number; limit?: number } = {}) => refill({ llm, today: TODAY, lists, version: 'test-1', dir, ...extra });
+  return { llm, log, run };
 }
 
 const reasons = (f: ReturnType<typeof fakes>) => f.llm.propose.mock.calls.at(-1)![0].rejected.map((x) => x.reason);
@@ -96,7 +90,7 @@ describe('refill', () => {
     expect(existsSync(join(dir, 'unlimited/hard/40.json'))).toBe(true);
 
     const again = fakes();
-    expect(await again.run()).toEqual({ created: [], failed: [], rejections: { propose: 0, gates: 0, source: 0, review: 0, solve: 0, build: 0 } });
+    expect(await again.run()).toEqual({ created: [], failed: [], rejections: { propose: 0, gates: 0, review: 0, solve: 0, build: 0 } });
     expect(again.log).toEqual([]);
   });
 
@@ -128,7 +122,7 @@ describe('refill', () => {
     seed({ skip: [0] });
     const f = fakes({ propose: [{ answer: 'QUART' }] });
     await f.run();
-    expect(f.log).toEqual(['propose', 'propose', 'source', 'review', 'solve']);
+    expect(f.log).toEqual(['propose', 'propose', 'review', 'solve']);
   });
 
   it('retries a candidate that fails a gate, with its reason in rejected', async () => {
@@ -137,37 +131,27 @@ describe('refill', () => {
     const report = await f.run();
     expect(report.created).toEqual([`wp-${TODAY}`]);
     expect(f.llm.propose.mock.calls[1]![0].rejected).toEqual([{ answer: 'QUART', reason: expect.stringMatching(/answer list/) }]);
-    expect(f.fetchSource).toHaveBeenCalledTimes(1);
+    expect(f.llm.review).toHaveBeenCalledTimes(1);
     expect(report.rejections.gates).toBe(1);
   });
 
   it('normalizes the proposal before the gates and the build', async () => {
     seed({ skip: [0] });
-    const f = fakes({ propose: [{ answer: ' cloud ', clue: '  Puzzle clue number 1 ', clueSource: ' https://example.com/cloud ' }] });
+    const f = fakes({ propose: [{ answer: ' cloud ', clue: '  Puzzle clue number 1 ' }] });
     await f.run();
-    expect(f.fetchSource).toHaveBeenCalledWith('https://example.com/cloud');
+    expect(f.llm.review).toHaveBeenCalledWith({ candidate: { answer: 'CLOUD', clue: 'Puzzle clue number 1' } });
     const daily = loadStore(dir).dailies.find((p) => p.date === TODAY)!;
     expect(wordpathV1.recoverAnswer(daily)).toBe('CLOUD');
     expect(daily.clue).toBe('Puzzle clue number 1');
   });
 
-  it('rejects a source that is missing or lacks the answer', async () => {
+  it('rejects a review that is inaccurate, offensive, or (at normal) a plain definition', async () => {
     seed({ skip: [0] });
-    const f = fakes({ source: [null, 'A page about something else.'] });
-    const report = await f.run();
-    expect(report.created).toEqual([`wp-${TODAY}`]);
-    expect(reasons(f)).toEqual([expect.stringMatching(/could not be fetched/), expect.stringMatching(/does not contain PLANT/)]);
-    expect(f.llm.review).toHaveBeenCalledTimes(1);
-    expect(report.rejections.source).toBe(2);
-  });
-
-  it('rejects a review that is unsupported, offensive, or (at normal) a plain definition', async () => {
-    seed({ skip: [0] });
-    const f = fakes({ review: [{ supported: false }, { offensive: true }, { plainDefinition: true }] });
+    const f = fakes({ review: [{ accurate: false, reason: 'the fruit is not blue' }, { offensive: true }, { plainDefinition: true }] });
     const report = await f.run();
     expect(report.created).toEqual([`wp-${TODAY}`]);
     expect(reasons(f)).toEqual([
-      expect.stringMatching(/not supported/),
+      'clue is inaccurate: the fruit is not blue',
       expect.stringMatching(/offensive/),
       expect.stringMatching(/plain definition/),
     ]);
@@ -197,7 +181,7 @@ describe('refill', () => {
     await f.run();
     const [request] = f.llm.solve.mock.calls[0]!;
     expect(request).toStrictEqual({ clue: 'Puzzle clue number 1', length: 5, letters: 'CDLOU' });
-    expect(JSON.stringify(request)).not.toMatch(/CLOUD|page about/i);
+    expect(JSON.stringify(request)).not.toMatch(/CLOUD/i);
   });
 
   it('never uses an answer twice, across dailies and unlimited', async () => {
@@ -224,16 +208,6 @@ describe('refill', () => {
     expect(report.rejections.gates).toBe(4);
     expect(existsSync(join(dir, `${TODAY}.json`))).toBe(false);
     expect(existsSync(join(dir, 'unlimited/hard/39.json'))).toBe(false);
-  });
-
-  it('rejects a search redirect link as the source without fetching it', async () => {
-    seed({ skip: [0] });
-    const f = fakes({ propose: [{ clueSource: 'https://vertexaisearch.cloud.google.com/grounding-api-redirect/AbC123' }] });
-    const report = await f.run();
-    expect(report.created).toEqual([`wp-${TODAY}`]);
-    expect(reasons(f)).toEqual([expect.stringMatching(/redirect link.*direct URL/)]);
-    expect(f.fetchSource).toHaveBeenCalledExactlyOnceWith('https://example.com/plant');
-    expect(report.rejections.source).toBe(1);
   });
 
   it('stops the whole run on the first rejected key', async () => {

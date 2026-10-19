@@ -5,7 +5,6 @@ import { loadLists, loadStore } from '@ttg/generator/io';
 import type { Llm } from './llm';
 import { chooseProvider } from './provider';
 import { addDays, refill } from './refill';
-import { fetchSourceText } from './source';
 
 const MUST_HAVE_DAYS = 7;
 
@@ -32,7 +31,7 @@ console.log(`provider ${provider.name}: proposer ${provider.proposer}, reviewer 
 
 const today = new Date().toLocaleDateString('en-CA'); // local YYYY-MM-DD
 const { lists, version } = loadLists();
-const report = await refill({ llm, today, lists, version, fetchSource: fetchSourceText, limit });
+const report = await refill({ llm, today, lists, version, limit });
 
 for (const id of report.created) console.log(`created ${id}`);
 for (const { id, reasons } of report.failed) console.log(`failed ${id}\n  ${reasons.join('\n  ')}`);

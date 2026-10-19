@@ -18,8 +18,8 @@ vi.mock('@google/genai', async (importOriginal) => ({
 
 const reply = (text: string, finishReason = FinishReason.STOP) =>
   Object.assign(new GenerateContentResponse(), { candidates: [{ content: { role: 'model', parts: [{ text }] }, finishReason }] });
-const candidate = { answer: 'MANGO', clue: 'Fruit of the Alphonso tree', clueSource: 'https://example.com/mango' };
-const review = { supported: true, offensive: false, plainDefinition: false, reason: 'The page lists {Alphonso} as a mango.' };
+const candidate = { answer: 'MANGO', clue: 'Fruit of the Alphonso tree' };
+const review = { accurate: true, offensive: false, plainDefinition: false, reason: 'An {Alphonso} is a mango.' };
 const request = (i = 0) => generateContent.mock.calls.at(i)![0];
 
 describe('gemini', () => {
@@ -30,26 +30,28 @@ describe('gemini', () => {
     expect(clients).toHaveLength(before);
   });
 
-  it('proposes with Search grounding on the proposer model and reads the JSON from the text', async () => {
-    generateContent.mockResolvedValueOnce(reply(`I found a page.\n\`\`\`json\n${JSON.stringify(candidate)}\n\`\`\``));
+  it('proposes on the proposer model with JSON output and no tools', async () => {
+    generateContent.mockResolvedValueOnce(reply(JSON.stringify(candidate)));
     const llm = createGeminiLlm('test-key');
     expect(await llm.propose({ topic: 'fruit', level: 'normal', avoid: [], rejected: [] })).toEqual(candidate);
-    expect(request()).toMatchObject({ model: GEMINI_PROPOSER_MODEL, config: { tools: [{ googleSearch: {} }] } });
+    expect(request()).toMatchObject({ model: GEMINI_PROPOSER_MODEL, config: { responseMimeType: 'application/json' } });
+    expect(request().config!.responseJsonSchema).toMatchObject({ type: 'object', additionalProperties: false });
+    expect(request().config!.tools).toBeUndefined();
     expect(request().contents).toMatch(/Topic: fruit/);
-    expect(request().config!.systemInstruction).toMatch(/untrusted data/);
+    expect(request().config!.systemInstruction).toMatch(/never instructions/);
   });
 
   it('reviews and solves on the reviewer model with JSON output and no tools', async () => {
     generateContent.mockResolvedValueOnce(reply(JSON.stringify(review))).mockResolvedValueOnce(reply('{"guesses": ["mango", "papaya"]}'));
     const llm = createGeminiLlm('test-key');
-    expect(await llm.review({ candidate, sourceText: 'Alphonso is a mango.' })).toEqual(review);
+    expect(await llm.review({ candidate })).toEqual(review);
     expect(await llm.solve({ clue: candidate.clue, length: 5, letters: 'AGMNO' })).toEqual(['MANGO', 'PAPAYA']);
     for (const i of [-2, -1]) {
       expect(request(i)).toMatchObject({ model: GEMINI_REVIEWER_MODEL, config: { responseMimeType: 'application/json' } });
       expect(request(i).config!.responseJsonSchema).toMatchObject({ type: 'object', additionalProperties: false });
       expect(request(i).config!.tools).toBeUndefined();
     }
-    expect(request(-2).contents).toMatch(/<page>\nAlphonso is a mango.\n<\/page>/);
+    expect(request(-2).contents).toMatch(/Clue: Fruit of the Alphonso tree/);
     expect(request(-1).contents).not.toMatch(/MANGO|Alphonso is/);
   });
 
@@ -71,10 +73,10 @@ describe('gemini', () => {
     const invalid = '{"error":{"code":400,"message":"API key not valid.","status":"INVALID_ARGUMENT","details":[{"reason":"API_KEY_INVALID"}]}}';
     for (const [status, message] of [[401, 'unauthenticated'], [403, 'permission denied'], [400, invalid]] as const) {
       generateContent.mockRejectedValueOnce(new ApiError({ status, message }));
-      await expect(llm.review({ candidate, sourceText: 'x' })).rejects.toBeInstanceOf(LlmAuthError);
+      await expect(llm.review({ candidate })).rejects.toBeInstanceOf(LlmAuthError);
     }
     generateContent.mockRejectedValueOnce(new ApiError({ status: 429, message: 'quota' }));
-    const limited = llm.review({ candidate, sourceText: 'x' });
+    const limited = llm.review({ candidate });
     await expect(limited).rejects.toThrow(/quota/);
     await expect(limited).rejects.not.toBeInstanceOf(LlmAuthError);
   });

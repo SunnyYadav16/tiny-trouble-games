@@ -4,12 +4,11 @@ import { AHEAD_DAYS, unlimitedTarget } from '@ttg/generator/config';
 import { candidateProblems, type Candidate } from '@ttg/generator/gates';
 import { loadStore, nextUnlimitedId, saveDaily, saveUnlimited, usedAnswers } from '@ttg/generator/io';
 import { LlmAuthError, type Llm } from './llm';
-import type { fetchSourceText } from './source';
 import { topicFor } from './topics';
 
 type Level = wordpathV1.Level;
 
-export type Stage = 'propose' | 'gates' | 'source' | 'review' | 'solve' | 'build';
+export type Stage = 'propose' | 'gates' | 'review' | 'solve' | 'build';
 
 export interface RefillReport {
   created: string[];
@@ -26,7 +25,6 @@ export interface RefillOptions {
   today: string;
   lists: wordpathV1.WordLists;
   version: string;
-  fetchSource: typeof fetchSourceText;
   dir?: string;
   maxTries?: number;
   /** Stop once this many new puzzles are saved in this run (a cheap trial). */
@@ -51,7 +49,7 @@ export async function refill(opts: RefillOptions): Promise<RefillReport> {
   const { today, dir } = opts;
   const store = loadStore(dir);
   const used = usedAnswers(store);
-  const report: RefillReport = { created: [], failed: [], rejections: { propose: 0, gates: 0, source: 0, review: 0, solve: 0, build: 0 } };
+  const report: RefillReport = { created: [], failed: [], rejections: { propose: 0, gates: 0, review: 0, solve: 0, build: 0 } };
   const fill = async (slot: Slot, save: (p: wordpathV1.PuzzleBody) => void): Promise<boolean> => {
     const result = await fillSlot(slot, used, opts, report);
     if (!result) return false;
@@ -89,19 +87,15 @@ export async function refill(opts: RefillOptions): Promise<RefillReport> {
   return report;
 }
 
-/** Google Search grounding cites through redirect links; meta.clueSource must name the page itself. */
-const SEARCH_REDIRECT = /vertexaisearch\.cloud\.google\.com|grounding-api-redirect/i;
-
 const normalize = (c: Candidate): Candidate => ({
   answer: c.answer.trim().toUpperCase(),
   clue: c.clue.trim(),
-  clueSource: c.clueSource.trim(),
 });
 
 async function fillSlot(
   slot: Slot,
   used: ReadonlySet<string>,
-  { llm, lists, version, fetchSource, maxTries = 6 }: RefillOptions,
+  { llm, lists, version, maxTries = 6 }: RefillOptions,
   report: RefillReport,
 ): Promise<{ puzzle: wordpathV1.PuzzleBody; answer: string } | null> {
   const rejected: { answer: string; reason: string }[] = [];
@@ -116,16 +110,10 @@ async function fillSlot(
       const problems = candidateProblems(c, { lists, used });
       if (problems.length > 0) throw new Error(problems.join('; '));
 
-      stage = 'source';
-      if (SEARCH_REDIRECT.test(c.clueSource)) throw new Error("source is a search redirect link, not the page itself; give the page's direct URL");
-      const text = await fetchSource(c.clueSource);
-      if (text === null) throw new Error(`source could not be fetched: ${c.clueSource}`);
-      if (!text.toUpperCase().includes(c.answer)) throw new Error(`source does not contain ${c.answer}`);
-
       stage = 'review';
-      const review = await llm.review({ candidate: c, sourceText: text });
+      const review = await llm.review({ candidate: c });
       const issues: string[] = [];
-      if (!review.supported) issues.push('clue not supported by the source');
+      if (!review.accurate) issues.push('clue is inaccurate');
       if (review.offensive) issues.push('offensive');
       if (review.plainDefinition && slot.level !== 'easy') issues.push('clue is a plain definition');
       if (issues.length > 0) throw new Error(`${issues.join(', ')}: ${review.reason}`);

@@ -5,8 +5,8 @@ import { chooseProvider } from './provider';
 
 // A stub fetch: no test reaches the network or a real model.
 const KEY = 'sk-or-test-key';
-const candidate = { answer: 'MANGO', clue: 'Fruit of the Alphonso tree', clueSource: 'https://example.com/mango' };
-const review = { supported: true, offensive: false, plainDefinition: false, reason: 'The page lists {Alphonso} as a mango.' };
+const candidate = { answer: 'MANGO', clue: 'Fruit of the Alphonso tree' };
+const review = { accurate: true, offensive: false, plainDefinition: false, reason: 'An {Alphonso} is a mango.' };
 const completion = (content: string | null, finish_reason: string | null = 'stop', cost = 0.001) => ({
   choices: [{ finish_reason, message: { role: 'assistant', content } }],
   usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15, cost },
@@ -31,8 +31,8 @@ describe('openrouter', () => {
     expect(f).not.toHaveBeenCalled();
   });
 
-  it('proposes on the proposer model with the web search tool and reads the JSON from the text', async () => {
-    const f = stub(respond(completion(`I found [example.com](https://example.com/mango).\n${JSON.stringify(candidate)}`)));
+  it('proposes on the proposer model with a strict JSON schema and no tools', async () => {
+    const f = stub(respond(completion(JSON.stringify(candidate))));
     expect(await createOpenRouterLlm(KEY, undefined, f).propose({ topic: 'fruit', level: 'normal', avoid: [], rejected: [] })).toEqual(candidate);
     const { url, init, headers, body } = sent(f);
     expect(url).toBe('https://openrouter.ai/api/v1/chat/completions');
@@ -42,18 +42,18 @@ describe('openrouter', () => {
     expect(headers.get('http-referer')).toBe('https://github.com/SunnyYadav16/tiny-trouble-games');
     expect(headers.get('x-openrouter-title')).toBe('Tiny Trouble Games');
     expect(body).toMatchObject({ model: OPENROUTER_PROPOSER_MODEL });
-    expect(body.tools).toEqual([{ type: 'openrouter:web_search', parameters: { engine: 'parallel', mode: 'turbo', max_results: 3, max_uses: 3 } }]);
-    expect(body.max_tool_calls).toBe(3);
+    expect(body.tools).toBeUndefined();
+    expect(body.max_tool_calls).toBeUndefined();
     expect(body.plugins).toBeUndefined();
-    expect(body.response_format).toBeUndefined();
-    expect(body.messages[0]).toMatchObject({ role: 'system', content: expect.stringMatching(/untrusted data/) });
+    expect(body.response_format).toMatchObject({ type: 'json_schema', json_schema: { strict: true, schema: { type: 'object', additionalProperties: false } } });
+    expect(body.messages[0]).toMatchObject({ role: 'system', content: expect.stringMatching(/never instructions/) });
     expect(body.messages[1]).toMatchObject({ role: 'user', content: expect.stringMatching(/Topic: fruit/) });
   });
 
-  it('reviews and solves on the reviewer model with a strict JSON schema and no web search', async () => {
+  it('reviews and solves on the reviewer model with a strict JSON schema and no tools', async () => {
     const f = stub(respond(completion(JSON.stringify(review))), respond(completion('{"guesses": ["mango", "papaya"]}')));
     const llm = createOpenRouterLlm(KEY, undefined, f);
-    expect(await llm.review({ candidate, sourceText: 'Alphonso is a mango.' })).toEqual(review);
+    expect(await llm.review({ candidate })).toEqual(review);
     expect(await llm.solve(solveRequest)).toEqual(['MANGO', 'PAPAYA']);
     for (const i of [0, 1]) {
       const { body } = sent(f, i);
@@ -64,11 +64,11 @@ describe('openrouter', () => {
       expect(body.response_format).toMatchObject({ type: 'json_schema', json_schema: { strict: true, schema: { type: 'object', additionalProperties: false } } });
     }
     const reviewed = sent(f, 0).body.messages;
-    expect(reviewed[0].content).toMatch(/untrusted data/);
-    expect(reviewed.at(-1).content).toMatch(/<page>\nAlphonso is a mango.\n<\/page>/);
+    expect(reviewed[0].content).toMatch(/never instructions/);
+    expect(reviewed.at(-1).content).toMatch(/Clue: Fruit of the Alphonso tree/);
     const solved = sent(f, 1).body;
     expect(solved.messages).toHaveLength(1);
-    expect(JSON.stringify(solved)).not.toMatch(/MANGO|Alphonso is|<page>/);
+    expect(JSON.stringify(solved)).not.toMatch(/MANGO/);
   });
 
   it('throws a clear error on malformed JSON, an error in a 200 body, no choices, an unexpected finish, or no text', async () => {
@@ -114,7 +114,7 @@ describe('openrouter', () => {
     const guardrail = { patterns: ['ignore all previous instructions'] };
     const policies = ['content_policy_violation', 'refusal'].map((error_type) => ({ error_type, provider_name: 'X' }));
     for (const metadata of [moderation, guardrail, ...policies]) {
-      const blocked = createOpenRouterLlm(KEY, undefined, stub(respond({ error: { code: 403, message: 'Request blocked', metadata } }, 403))).review({ candidate, sourceText: 'x' });
+      const blocked = createOpenRouterLlm(KEY, undefined, stub(respond({ error: { code: 403, message: 'Request blocked', metadata } }, 403))).review({ candidate });
       await expect(blocked).rejects.toThrow(/blocked/);
       await expect(blocked).rejects.not.toBeInstanceOf(LlmAuthError);
     }
@@ -149,7 +149,7 @@ describe('openrouter', () => {
     const llm = createOpenRouterLlm(KEY, undefined, f);
     expect(llm.spent).toEqual({ propose: 0, review: 0, solve: 0 });
     await llm.propose({ topic: 'fruit', level: 'normal', avoid: [], rejected: [] });
-    await llm.review({ candidate, sourceText: 'x' });
+    await llm.review({ candidate });
     await expect(llm.solve(solveRequest)).rejects.toThrow(/not the expected JSON/);
     await llm.solve(solveRequest);
     await llm.solve(solveRequest);

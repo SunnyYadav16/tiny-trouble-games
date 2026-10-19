@@ -7,7 +7,6 @@ import { initialState, RULES_VERSION, spell, step, type Game } from './rules';
 import { blockedWords, checkAnswer, type WordLists } from './words';
 
 export interface PuzzleMeta {
-  clueSource: string;
   wordListVersion: string;
   generatorVersion: string;
   level: Level;
@@ -35,14 +34,13 @@ export interface MakePuzzleInput {
   level: Level;
   answer: string;
   clue: string;
-  clueSource: string;
   blocked: readonly string[];
   wordListVersion: string;
 }
 
 /** Throws `GenerateError` naming the first size that cannot be built. */
 export function makePuzzle(input: MakePuzzleInput): PuzzleBody {
-  const { id, seedKey, date, level, answer, clue, clueSource, blocked, wordListVersion } = input;
+  const { id, seedKey, date, level, answer, clue, blocked, wordListVersion } = input;
   const grids: Record<string, string> = {};
   const checks: Record<string, string> = {};
   for (const size of SIZES) {
@@ -58,7 +56,7 @@ export function makePuzzle(input: MakePuzzleInput): PuzzleBody {
     length: answer.length,
     grids,
     checks,
-    meta: { clueSource, wordListVersion, generatorVersion: GENERATOR_VERSION, level },
+    meta: { wordListVersion, generatorVersion: GENERATOR_VERSION, level },
     ...(date === undefined ? {} : { date }),
   };
 }
@@ -80,7 +78,7 @@ export function parsePuzzle(
   if (!isText(id) || !isText(clue)) return null;
   if (!Number.isInteger(length) || (length as number) < 5 || (length as number) > 7) return null;
   if (date !== undefined && !(typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date))) return null;
-  if (!isRecord(meta) || !isText(meta.clueSource) || !isText(meta.wordListVersion)) return null;
+  if (!isRecord(meta) || !isText(meta.wordListVersion)) return null;
   if (!isText(meta.generatorVersion) || !LEVELS.includes(meta.level as Level)) return null;
   if (!isRecord(grids) || !isRecord(checks)) return null;
   if (Object.keys(grids).length !== SIZES.length || Object.keys(checks).length !== SIZES.length) return null;
@@ -115,7 +113,6 @@ export function parsePuzzle(
     grids: safeGrids,
     checks: safeChecks,
     meta: {
-      clueSource: meta.clueSource,
       wordListVersion: meta.wordListVersion,
       generatorVersion: meta.generatorVersion,
       level: meta.level as Level,

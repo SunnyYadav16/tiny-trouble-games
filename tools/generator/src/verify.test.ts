@@ -19,7 +19,7 @@ const lists = { answers: new Set(ANSWERS), blocking: new Set(ANSWERS) };
 const TODAY = '2026-11-01';
 const make = (answer: string, id: string, level: Level, date?: string): PuzzleBody =>
   buildPuzzle(
-    { answer, clue: 'A clue that is long enough to pass', clueSource: 'https://example.com/clue' },
+    { answer, clue: 'A clue that is long enough to pass' },
     { lists, version: 'test-1', id, seedKey: id, level, date },
   );
 

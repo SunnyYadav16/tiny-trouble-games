@@ -5,6 +5,7 @@ import {
   parseCandidate,
   parseGuesses,
   parseReview,
+  PROPOSE_SCHEMA,
   PROPOSE_SYSTEM,
   proposePrompt,
   REVIEW_SCHEMA,
@@ -23,11 +24,6 @@ export const OPENROUTER_REVIEWER_MODEL = 'google/gemini-3.1-flash-lite';
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 const TIMEOUT_MS = 120_000;
 const TRIES = 3;
-/**
- * OpenRouter's web search server tool on Parallel's turbo mode, the cheapest engine ($0.001 a search, English): at most 3 searches,
- * and max_tool_calls bounds the server-tool loop (default 30 steps, each a model turn) so a model looping on search stops early.
- */
-const SEARCH = { tools: [{ type: 'openrouter:web_search', parameters: { engine: 'parallel', mode: 'turbo', max_results: 3, max_uses: 3 } }], max_tool_calls: 3 };
 
 interface OpenRouterError {
   message?: string;
@@ -70,10 +66,10 @@ export function createOpenRouterLlm(
     'X-OpenRouter-Title': 'Tiny Trouble Games',
   };
 
-  /** One completion's text. Retries 408, 429, and 5xx; a refused key or no credits stops the run. */
-  async function ask(stage: keyof Spent, model: string, messages: { role: 'system' | 'user'; content: string }[], extra: object): Promise<string> {
+  /** One completion's text, as JSON in `schema`. Retries 408, 429, and 5xx; a refused key or no credits stops the run. */
+  async function ask(stage: keyof Spent, model: string, messages: { role: 'system' | 'user'; content: string }[], schema: object): Promise<string> {
     // Effort and output cap mirror the other backends and bound the cost of one call.
-    const body = JSON.stringify({ model, messages, max_tokens: 16_000, reasoning: { effort: 'medium' }, ...extra });
+    const body = JSON.stringify({ model, messages, max_tokens: 16_000, reasoning: { effort: 'medium' }, response_format: jsonSchema(stage, schema) });
     for (let attempt = 1; ; attempt++) {
       const res = await fetchFn(ENDPOINT, { method: 'POST', headers, body, signal: AbortSignal.timeout(TIMEOUT_MS) });
       if (res.ok) {
@@ -102,16 +98,10 @@ export function createOpenRouterLlm(
 
   return {
     spent,
-    // Web search and JSON mode are not combined, so propose asks for JSON in the text like the other backends.
     propose: async (r) =>
-      parseCandidate(await ask('propose', models.proposer, [{ role: 'system', content: PROPOSE_SYSTEM }, { role: 'user', content: proposePrompt(r) }], SEARCH)),
+      parseCandidate(await ask('propose', models.proposer, [{ role: 'system', content: PROPOSE_SYSTEM }, { role: 'user', content: proposePrompt(r) }], PROPOSE_SCHEMA)),
     review: async (r) =>
-      parseReview(
-        await ask('review', models.reviewer, [{ role: 'system', content: REVIEW_SYSTEM }, { role: 'user', content: reviewPrompt(r) }], {
-          response_format: jsonSchema('review', REVIEW_SCHEMA),
-        }),
-      ),
-    solve: async (r) =>
-      parseGuesses(await ask('solve', models.reviewer, [{ role: 'user', content: solvePrompt(r) }], { response_format: jsonSchema('guesses', GUESSES_SCHEMA) })),
+      parseReview(await ask('review', models.reviewer, [{ role: 'system', content: REVIEW_SYSTEM }, { role: 'user', content: reviewPrompt(r) }], REVIEW_SCHEMA)),
+    solve: async (r) => parseGuesses(await ask('solve', models.reviewer, [{ role: 'user', content: solvePrompt(r) }], GUESSES_SCHEMA)),
   };
 }

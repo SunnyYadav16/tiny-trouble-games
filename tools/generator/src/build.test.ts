@@ -10,8 +10,8 @@ import { loadLists, loadStore, nextUnlimitedId, saveDaily, saveUnlimited, usedAn
 
 const BLOCKED = ['AMONG', 'GAMMA', 'MAMMA', 'MANGA', 'MANNA'];
 const lists = { answers: new Set(['MANGO', 'CLOUD']), blocking: new Set([...BLOCKED, 'MANGO', 'CLOUD']) };
-const mango: Candidate = { answer: 'MANGO', clue: 'A tropical fruit with a large stone', clueSource: 'https://example.com/mango' };
-const cloud: Candidate = { answer: 'CLOUD', clue: 'It drifts overhead and may bring rain', clueSource: 'https://example.com/cloud' };
+const mango: Candidate = { answer: 'MANGO', clue: 'A tropical fruit with a large stone' };
+const cloud: Candidate = { answer: 'CLOUD', clue: 'It drifts overhead and may bring rain' };
 const make = (c: Candidate, id: string, level: wordpathV1.Level = 'normal', date?: string) =>
   buildPuzzle(c, { lists, version: 'test-1', id, seedKey: id, level, date });
 

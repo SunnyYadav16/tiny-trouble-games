@@ -12,18 +12,18 @@ export interface ProposeRequest {
 
 export interface ReviewRequest {
   candidate: Candidate;
-  sourceText: string;
 }
 
 export interface Review {
-  supported: boolean;
+  /** Every fact in the clue is true and the clue points to the answer. */
+  accurate: boolean;
   offensive: boolean;
   /** The clue is a dictionary definition of the answer or a synonym. */
   plainDefinition: boolean;
   reason: string;
 }
 
-/** What a player sees, and nothing more: never the answer or the source. */
+/** What a player sees, and nothing more: never the answer. */
 export interface SolveRequest {
   clue: string;
   length: number;

@@ -19,7 +19,6 @@ export function buildPuzzle(c: Candidate, ctx: BuildContext): wordpathV1.PuzzleB
     level: ctx.level,
     answer: c.answer,
     clue: c.clue,
-    clueSource: c.clueSource,
     blocked: wordpathV1.blockedWords(c.answer, ctx.lists.blocking),
     wordListVersion: ctx.version,
   });

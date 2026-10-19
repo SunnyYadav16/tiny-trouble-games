@@ -6,7 +6,7 @@ const lists = {
   blocking: new Set(['MANGO', 'STRAP', 'PARTS']),
 };
 const ctx = { lists, used: new Set<string>() };
-const good: Candidate = { answer: 'MANGO', clue: 'A tropical fruit with a large stone', clueSource: 'https://example.com/mango' };
+const good: Candidate = { answer: 'MANGO', clue: 'A tropical fruit with a large stone' };
 const problems = (c: Partial<Candidate>, used: string[] = []) =>
   candidateProblems({ ...good, ...c }, { lists, used: new Set(used) }).join('\n');
 
@@ -35,10 +35,5 @@ describe('candidateProblems', () => {
 
   it('flags a clue containing the first five letters inside another word', () => {
     expect(problems({ answer: 'MANGOES', clue: 'Several mangoes in a bowl' }).split('\n')).toContain('clue contains the answer');
-  });
-
-  it('flags a source that is not https', () => {
-    expect(problems({ clueSource: 'http://example.com' })).toBe('source must be an https:// URL');
-    expect(problems({ clueSource: 'not a url' })).toBe('source must be an https:// URL');
   });
 });

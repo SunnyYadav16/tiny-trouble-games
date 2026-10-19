@@ -13,7 +13,6 @@ const input: MakePuzzleInput = {
   level: 'normal',
   answer: 'MANGO',
   clue: 'A tropical fruit with a large stone',
-  clueSource: 'test',
   blocked: BLOCKED,
   wordListVersion: 'test-1',
 };
@@ -31,7 +30,7 @@ describe('makePuzzle', () => {
     expect(Object.values(p)).not.toContain('MANGO');
     expect(Object.keys(p.grids)).toEqual(SIZES.map(String));
     expect(p).toMatchObject({ game: 'wordpath', rulesVersion: 'wordpath/v1', length: 5, date: '2026-11-01' });
-    expect(p.meta).toEqual({ clueSource: 'test', wordListVersion: 'test-1', generatorVersion: 'gen-1', level: 'normal' });
+    expect(p.meta).toEqual({ wordListVersion: 'test-1', generatorVersion: 'gen-1', level: 'normal' });
   });
 
   it('leaves date off unlimited puzzles', () => {
@@ -66,7 +65,9 @@ describe('parsePuzzle', () => {
   });
 
   it('builds the result from validated fields only', () => {
-    const raw = { ...clone(), extra: 1 };
+    const raw = clone();
+    raw.extra = 1;
+    raw.meta.source = 'https://example.com/old';
     expect(parsePuzzle(raw)?.puzzle).toEqual(p);
   });
 

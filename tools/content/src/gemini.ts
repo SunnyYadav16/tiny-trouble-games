@@ -5,6 +5,7 @@ import {
   parseCandidate,
   parseGuesses,
   parseReview,
+  PROPOSE_SCHEMA,
   PROPOSE_SYSTEM,
   proposePrompt,
   REVIEW_SCHEMA,
@@ -15,7 +16,7 @@ import {
 
 /**
  * From ai.google.dev/gemini-api/docs/models (read 2026-10-19): the stable
- * flagship proposes with Google Search grounding, the stable Flash model reviews.
+ * flagship proposes, the stable Flash model reviews.
  */
 export const GEMINI_PROPOSER_MODEL = 'gemini-4-argon';
 export const GEMINI_REVIEWER_MODEL = 'gemini-3.8-flash';
@@ -51,9 +52,8 @@ export function createGeminiLlm(apiKey: string, models = { proposer: GEMINI_PROP
   // The SDK retries nothing by default; 3 attempts on 408, 429, and 5xx match the Anthropic SDK's default.
   const client = new GoogleGenAI({ apiKey, httpOptions: { retryOptions: { attempts: 3 } } });
   return {
-    // Search grounding with JSON output is a Gemini 3 preview only, so propose asks for JSON in the text.
     propose: async (r) =>
-      parseCandidate(await ask(client, models.proposer, proposePrompt(r), { systemInstruction: PROPOSE_SYSTEM, tools: [{ googleSearch: {} }] })),
+      parseCandidate(await ask(client, models.proposer, proposePrompt(r), { systemInstruction: PROPOSE_SYSTEM, ...json(PROPOSE_SCHEMA) })),
     review: async (r) =>
       parseReview(await ask(client, models.reviewer, reviewPrompt(r), { systemInstruction: REVIEW_SYSTEM, ...json(REVIEW_SCHEMA) })),
     solve: async (r) => parseGuesses(await ask(client, models.reviewer, solvePrompt(r), json(GUESSES_SCHEMA))),

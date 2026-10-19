@@ -5,6 +5,7 @@ import {
   parseCandidate,
   parseGuesses,
   parseReview,
+  PROPOSE_SCHEMA,
   PROPOSE_SYSTEM,
   proposePrompt,
   REVIEW_SCHEMA,
@@ -27,16 +28,9 @@ const keyRejected = (e: unknown): never => {
   throw e;
 };
 
-/** Concatenated text of the final reply. Refusals and truncation throw. */
+/** Concatenated text of the reply. Refusals and truncation throw. */
 async function ask(client: Anthropic, params: Anthropic.MessageCreateParamsNonStreaming): Promise<string> {
-  const messages = [...params.messages];
-  const create = () => client.messages.create({ ...params, messages }).catch(keyRejected);
-  let res = await create();
-  // A server tool can pause a long turn; sending the turn back resumes it.
-  for (let i = 0; res.stop_reason === 'pause_turn' && i < 2; i++) {
-    messages.push({ role: 'assistant', content: res.content });
-    res = await create();
-  }
+  const res = await client.messages.create(params).catch(keyRejected);
   if (res.stop_reason !== 'end_turn') throw new Error(`${params.model} stopped: ${res.stop_reason}`);
   return res.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('');
 }
@@ -54,8 +48,7 @@ export function createAnthropicLlm(apiKey: string, models = { proposer: PROPOSER
       const text = await ask(client, {
         model: models.proposer,
         max_tokens: MAX_TOKENS,
-        output_config: { effort: EFFORT },
-        tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 5 }],
+        output_config: { effort: EFFORT, format: jsonFormat(PROPOSE_SCHEMA) },
         system: PROPOSE_SYSTEM,
         messages: [{ role: 'user', content: proposePrompt(r) }],
       });
