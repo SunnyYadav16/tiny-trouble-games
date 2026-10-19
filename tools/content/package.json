@@ -1,0 +1,13 @@
+{
+  "name": "@ttg/content",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "@ttg/engine": "workspace:*",
+    "@ttg/generator": "workspace:*"
+  }
+}
