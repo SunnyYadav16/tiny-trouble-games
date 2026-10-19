@@ -23,7 +23,7 @@ One game at a time. Do not start, scaffold, or stub the next game until the curr
 
 ## Stack
 
-pnpm workspace · Node ≥22 · TypeScript strict · Vite · React 19 · Vitest + jsdom + Testing Library · fast-check · oxlint · tsx · Playwright + axe · GSAP + `@gsap/react` (apps/web only) · `@anthropic-ai/sdk` (tools/content only) · GitHub Actions · Cloudflare Pages.
+pnpm workspace · Node ≥22 · TypeScript strict · Vite · React 19 · Vitest + jsdom + Testing Library · fast-check · oxlint · tsx · Playwright + axe · GSAP + `@gsap/react` (apps/web only) · `@google/genai` and `@anthropic-ai/sdk` (tools/content only) · GitHub Actions · Cloudflare Pages.
 
 ## Commands
 
@@ -38,7 +38,7 @@ pnpm dev               # web app
 pnpm build             # production web build (apps/web/dist)
 pnpm e2e               # Playwright + axe, desktop and phone projects
 pnpm wordlists build   # rebuild content/wordlists from upstream sources
-pnpm content refill    # AI fills missing dailies and grows the unlimited pool; needs ANTHROPIC_API_KEY
+pnpm content refill    # AI fills missing dailies and grows the unlimited pool; needs GEMINI_API_KEY (or ANTHROPIC_API_KEY)
 pnpm verify            # re-check every public puzzle, word list hashes, and the schedule
 pnpm bench             # generator timing per size
 ```
@@ -85,11 +85,11 @@ PRODUCT.md, DESIGN.md     impeccable product context and design system (DESIGN.m
 - Word lists live in `content/wordlists/`. Any edit needs a new label in `VERSION`; then run `pnpm verify` and regenerate puzzles whose `wordListVersion` no longer matches.
 
 ### AI content
-- Only `tools/content` calls AI or depends on `@anthropic-ai/sdk`.
-- `ANTHROPIC_API_KEY` comes from the environment only. Never write it to a file, a log, or a commit.
+- Only `tools/content` calls AI or depends on an AI SDK (`@google/genai`, `@anthropic-ai/sdk`).
+- `GEMINI_API_KEY` and `ANTHROPIC_API_KEY` come from the environment only. Never write it to a file, a log, or a commit.
 - Proposer and reviewer are different models. Nothing is published unless every stage passes: deterministic gates; the source page is fetched and contains the answer; the reviewer finds the clue supported and not offensive; the reviewer solves the clue blind with the answer as its first guess; the built puzzle verifies and replays at every size.
 - Tests never call a real model or the network. AI sits behind the `Llm` interface with a fake.
-- Read the `claude-api` skill for current model IDs and tool names before changing `anthropic.ts`.
+- Read the `claude-api` skill for current model IDs and tool names before changing `anthropic.ts`; fetch current Gemini API docs (Context7) before changing `gemini.ts`.
 
 ### Accessibility (every game)
 - Every action is a single tap/click and works from the keyboard: arrows move focus, Enter/Space activate, Escape clears, Tab reaches every button.
@@ -134,7 +134,7 @@ PRODUCT.md, DESIGN.md     impeccable product context and design system (DESIGN.m
 ## Keep it lean
 
 - No abstraction until a second real use exists. Shared code moves to `shared/` when the second game needs it, not before.
-- No new dependency when a few lines or the platform covers it. Approved so far: Playwright, axe, `@anthropic-ai/sdk`, `gsap`, `@gsap/react`.
+- No new dependency when a few lines or the platform covers it. Approved so far: Playwright, axe, `@anthropic-ai/sdk`, `@google/genai`, `gsap`, `@gsap/react`.
 - No speculative config, feature flags, or leaderboard/server code until leaderboards are scheduled.
 - Delete dead code; don't comment it out.
 - Files over ~300 lines are a smell. Split by responsibility.
