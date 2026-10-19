@@ -257,6 +257,14 @@ describe('refill', () => {
     expect(loadStore(dir).unlimited.easy).toHaveLength(39);
   });
 
+  it('caps dailies too: --limit 1 with several missing dailies fills only the first', async () => {
+    seed({ skip: [0, 1, 2] });
+    const f = fakes();
+    const report = await f.run({ limit: 1 });
+    expect(report.created).toEqual([`wp-${TODAY}`]);
+    expect(f.llm.propose).toHaveBeenCalledTimes(1);
+  });
+
   it('records a thrown model error as a failed try', async () => {
     seed({ skip: [0] });
     const f = fakes();

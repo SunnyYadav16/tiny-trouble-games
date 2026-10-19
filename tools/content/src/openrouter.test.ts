@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { LlmAuthError } from './llm';
-import { createOpenRouterLlm, OPENROUTER_PROPOSER_MODEL, OPENROUTER_REVIEWER_MODEL } from './openrouter';
+import { createOpenRouterLlm, OPENROUTER_PROPOSER_MODEL, OPENROUTER_REVIEWER_MODEL, retryWait } from './openrouter';
 import { chooseProvider } from './provider';
 
 // A stub fetch: no test reaches the network or a real model.
@@ -43,6 +43,7 @@ describe('openrouter', () => {
     expect(headers.get('x-openrouter-title')).toBe('Tiny Trouble Games');
     expect(body).toMatchObject({ model: OPENROUTER_PROPOSER_MODEL });
     expect(body.tools).toEqual([{ type: 'openrouter:web_search', parameters: { engine: 'parallel', mode: 'turbo', max_results: 3, max_uses: 3 } }]);
+    expect(body.max_tool_calls).toBe(3);
     expect(body.plugins).toBeUndefined();
     expect(body.response_format).toBeUndefined();
     expect(body.messages[0]).toMatchObject({ role: 'system', content: expect.stringMatching(/untrusted data/) });
@@ -58,6 +59,7 @@ describe('openrouter', () => {
       const { body } = sent(f, i);
       expect(body.model).toBe(OPENROUTER_REVIEWER_MODEL);
       expect(body.tools).toBeUndefined();
+      expect(body.max_tool_calls).toBeUndefined();
       expect(body.plugins).toBeUndefined();
       expect(body.response_format).toMatchObject({ type: 'json_schema', json_schema: { strict: true, schema: { type: 'object', additionalProperties: false } } });
     }
@@ -83,13 +85,19 @@ describe('openrouter', () => {
     }
   });
 
-  it('stops the run on 401, a plain 403 (no metadata), or 402, and never prints the key', async () => {
+  it('stops the run on 401, a 403 that is not a content block, or 402, and never prints the key', async () => {
     const log = vi.spyOn(console, 'log');
     const error = vi.spyOn(console, 'error');
-    for (const [status, message] of [[401, 'No auth credentials found'], [403, 'Key is disabled']] as const) {
-      const refused = createOpenRouterLlm(KEY, undefined, stub(respond({ error: { code: status, message } }, status))).solve(solveRequest);
+    const refusals = [
+      { code: 401, message: 'No auth credentials found' },
+      { code: 403, message: 'Key is disabled' },
+      { code: 403, message: 'Forbidden', metadata: { error_type: 'forbidden', provider_name: 'X' } },
+    ];
+    for (const body of refusals) {
+      const refused = createOpenRouterLlm(KEY, undefined, stub(respond({ error: body }, body.code))).solve(solveRequest);
       await expect(refused).rejects.toBeInstanceOf(LlmAuthError);
-      await expect(refused).rejects.toThrow(message);
+      await expect(refused).rejects.toThrow(body.message);
+      await expect(refused).rejects.not.toThrow(KEY);
     }
     const broke = createOpenRouterLlm(KEY, undefined, stub(respond({ error: { code: 402, message: 'Insufficient credits' } }, 402))).solve(solveRequest);
     await expect(broke).rejects.toBeInstanceOf(LlmAuthError);
@@ -101,10 +109,11 @@ describe('openrouter', () => {
     error.mockRestore();
   });
 
-  it('treats a moderation or guardrail 403 (with metadata) as one failed try, not a refused key', async () => {
+  it('treats a moderation, guardrail, or policy 403 as one failed try, not a refused key', async () => {
     const moderation = { reasons: ['violence'], flagged_input: '...', provider_name: 'X', model_slug: 'x/y' };
     const guardrail = { patterns: ['ignore all previous instructions'] };
-    for (const metadata of [moderation, guardrail]) {
+    const policies = ['content_policy_violation', 'refusal'].map((error_type) => ({ error_type, provider_name: 'X' }));
+    for (const metadata of [moderation, guardrail, ...policies]) {
       const blocked = createOpenRouterLlm(KEY, undefined, stub(respond({ error: { code: 403, message: 'Request blocked', metadata } }, 403))).review({ candidate, sourceText: 'x' });
       await expect(blocked).rejects.toThrow(/blocked/);
       await expect(blocked).rejects.not.toBeInstanceOf(LlmAuthError);
@@ -122,6 +131,11 @@ describe('openrouter', () => {
     await expect(failed).rejects.toThrow(/503.*No provider available/);
     await expect(failed).rejects.not.toBeInstanceOf(LlmAuthError);
     expect(down).toHaveBeenCalledTimes(3);
+  });
+
+  it('waits Retry-After seconds when it is a number, else 1 s then 2 s, and never over 60 s', () => {
+    expect([retryWait('0', 1), retryWait('5', 2), retryWait('600', 1)]).toEqual([0, 5, 60]);
+    expect([retryWait(null, 1), retryWait('', 1), retryWait(' ', 2), retryWait('-3', 1), retryWait('Wed, 21 Oct 2026 07:28:00 GMT', 2)]).toEqual([1, 1, 2, 1, 2]);
   });
 
   it('sums the reported cost per stage, failed replies included', async () => {
