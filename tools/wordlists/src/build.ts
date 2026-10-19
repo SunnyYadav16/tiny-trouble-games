@@ -7,6 +7,8 @@ import { parseWordList } from './parse';
 /** SCOWL size levels (tuned by the generator benchmark). Answers: common words. Blocking: a broad dictionary. */
 const ANSWER_MAX_LEVEL = 40;
 const BLOCK_MAX_LEVEL = 95;
+/** SCOWL taboo lists (all levels). Their words are never eligible as answers but stay in the blocking list. */
+const SCOWL_TABOO = ['offensive.1', 'offensive.2', 'profane.1', 'profane.3'].map((f) => `scowl-2020.12.07/misc/${f}`);
 const MIN_LEN = 5;
 const MAX_LEN = 7;
 
@@ -47,20 +49,29 @@ async function fetchSource({ file, url, sha256: expected }: { file: string; url:
   return path;
 }
 
+const tarText = (tarball: string, members: string[]) =>
+  execFileSync('tar', ['-xzOf', tarball, ...members], { encoding: 'latin1', maxBuffer: 1 << 28 });
+
 /** SCOWL words from all pinned categories at size levels <= maxLevel. Files are Latin-1: accents are kept and then dropped by the parser. */
 function scowlWords(tarball: string, maxLevel: number) {
   const members = SCOWL_CATEGORIES.flatMap((category) =>
     SCOWL_LEVELS.filter((level) => level <= maxLevel).map((level) => `scowl-2020.12.07/final/${category}.${level}`),
   );
-  const text = execFileSync('tar', ['-xzOf', tarball, ...members], { encoding: 'latin1', maxBuffer: 1 << 28 });
-  return parseWordList(text);
+  return parseWordList(tarText(tarball, members));
 }
 
 const inLengthRange = (word: string) => word.length >= MIN_LEN && word.length <= MAX_LEN;
 
 const enable = readFileSync(await fetchSource(SOURCES.enable), 'utf8');
 const scowl = await fetchSource(SOURCES.scowl);
-const answers = scowlWords(scowl, ANSWER_MAX_LEVEL).filter(inLengthRange);
+const excluded = new Set([
+  // The taboo lists are mixed case; lowercase first or the parser would drop capitalized entries.
+  ...parseWordList(tarText(scowl, SCOWL_TABOO).toLowerCase()),
+  ...parseWordList(readFileSync(join(outDir, 'exclude-answers.txt'), 'utf8').toLowerCase()),
+]);
+const candidates = scowlWords(scowl, ANSWER_MAX_LEVEL).filter(inLengthRange);
+const answers = candidates.filter((word) => !excluded.has(word));
+console.log(`removed ${candidates.length - answers.length} offensive words from answers`);
 const blocking = [...new Set([...parseWordList(enable), ...scowlWords(scowl, BLOCK_MAX_LEVEL)])]
   .filter(inLengthRange)
   .sort();

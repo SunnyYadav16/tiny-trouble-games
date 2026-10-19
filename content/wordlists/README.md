@@ -2,7 +2,7 @@
 
 Two committed lists feed Word Path (spec section 4):
 
-- `answers.txt`: common words the AI may pick as answers.
+- `answers.txt`: common words the AI may pick as answers. Offensive and profane words are removed (see Build rules).
 - `blocking.txt`: a broad dictionary. Any blocking word of the answer's length made only of the answer's letters must have no route on the grid, so the answer is the only word a player can find.
 
 Both are uppercase A-Z, one word per line, sorted, with a trailing newline. `VERSION` holds the label recorded in every puzzle as `wordListVersion`. Any edit to a list needs a new label there.
@@ -13,7 +13,7 @@ Rebuild with `pnpm wordlists build`. It downloads each pinned source into `node_
 
 SHA-256 of the committed files:
 
-- answers.txt: sha256 252d02e83625412cf2298d6938c68235ff84d1faf67e99844c7e660992a1facf
+- answers.txt: sha256 f43e12bcd5cb32643476e62df275315b040d190148cdba447d1088b1dc720a4e
 - blocking.txt: sha256 ccdc9eb4d2a54096fa34a8f9f2854b4f5b5f7f2167d528fe8a4348a1b413a188
 
 ## Sources
@@ -38,10 +38,13 @@ SHA-256 of the committed files:
 
 ## Build rules
 
-- `answers.txt` = SCOWL levels up to 40 (`ANSWER_MAX_LEVEL`).
+- `answers.txt` = SCOWL levels up to 40 (`ANSWER_MAX_LEVEL`), minus the exclusions below.
 - `blocking.txt` = ENABLE union SCOWL levels up to 95 (`BLOCK_MAX_LEVEL`).
 - Parsing keeps only `^[a-z]+$` lines, uppercased: this drops capitalized proper nouns, all-caps abbreviations, accented words, and words with apostrophes or hyphens.
 - Both lists keep only 5 to 7 letter words, the answer lengths. The engine only queries the blocking list at the answer's length, so other lengths would be dead weight.
+- Answer exclusions (answers only; `blocking.txt` keeps these words so they can never be traced as a second route). 41 words are removed:
+  - 21 come from SCOWL's taboo lists in `misc/`, all levels: `offensive.1`, `offensive.2` (racial slurs), `profane.1`, `profane.3` (vulgar and swear words). Mixed-case entries are lowercased before matching.
+  - 20 come from `exclude-answers.txt`, a short hand-kept list (one uppercase word per line) of slurs and vulgar terms that SCOWL's taboo lists miss (for example BITCH, PUSSY, WHORE and their inflections). Add a word there, rebuild, and bump `VERSION`.
 - The build fails if any of AMONG, MANGA, MANNA, GAMMA, MAMMA is missing from `blocking.txt`.
 
 ## Attribution and license notices
