@@ -1,0 +1,63 @@
+/* GameView: clue cartouche, answer stones, result line, controls, keyboard line. Phone order: clue, stones, board, result, buttons. */
+
+.cartouche { position: relative; border: 1px solid var(--ink); outline: 1px solid var(--ink); outline-offset: 4px; padding: 16px 16px 14px; margin: 5px; }
+.cartouche .lbl { position: absolute; top: -10px; left: 16px; padding: 0 8px; background: var(--stone); font-size: var(--text-xs); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); }
+.cartouche p { margin: 0; font-size: 19px; line-height: 1.28; font-weight: 500; font-variation-settings: "wdth" 92, "opsz" 32; text-wrap: balance; }
+
+/* answer stones: empty sockets that fill with the route, turn leaf green when solved, ink when given up */
+.stones { --w: 46px; display: flex; justify-content: center; gap: 6px; align-items: center; }
+.stoneb {
+  flex: 0 1 var(--w); min-width: 28px; height: calc(var(--w) * 1.087); border-radius: 14px 14px 17px 17px;
+  background: var(--stone-3); box-shadow: inset 0 -4px 0 rgb(0 0 0 / .12), 0 1px 2px rgb(0 0 0 / .14);
+  display: grid; place-items: center; font-size: 23px; font-weight: 700; font-variation-settings: "wdth" 85; color: var(--ink);
+}
+.stoneb.empty { background: transparent; box-shadow: inset 0 0 0 1.5px var(--rule); }
+.stoneb.solved { background: var(--leaf); color: var(--cream); box-shadow: inset 0 -4px 0 rgb(0 0 0 / .2); }
+.stoneb.revealed { background: var(--ink); color: var(--stone); }
+.stoneb span { animation: rise 140ms var(--ease-out) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(4px); } }
+.stones .ok { flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--leaf); display: grid; place-items: center; margin-left: 4px; }
+.stones .ok svg { width: 18px; height: 18px; stroke: var(--cream); stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+/* result line: reserves its row so the board never jumps */
+.resline { min-height: 26px; font-size: var(--text-md); font-weight: 600; display: flex; justify-content: center; gap: 8px; align-items: center; text-align: center; }
+.resline:focus { outline: none; }
+.resline:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.resline[data-good] { color: var(--good-ink); }
+.resline .word { font-variation-settings: "wdth" 85; letter-spacing: .06em; padding: 2px 8px; border: 1.5px dashed var(--ink-2); border-radius: 8px; }
+
+/* controls */
+.btn kbd { font: 600 var(--text-xs)/1 var(--font); }
+.confirm { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 14px 14px; border: 1.5px solid var(--warn); border-radius: var(--radius-xl); }
+.confirm span { grid-column: 1 / -1; font-weight: 600; }
+.confirm, .giveup { animation: swap-in 140ms var(--ease-out) both; }
+@keyframes swap-in { from { opacity: 0; transform: scale(.97); } }
+.kbdline { margin: auto 0 0; font-size: var(--text-sm); color: var(--ink-2); }
+.kbdline kbd { padding: 3px 5px; }
+.kbdline [aria-hidden] { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stoneb span, .confirm, .giveup { animation: none; }
+}
+
+/* phone: the side panel dissolves so its parts and the board stage order as one column.
+   `.side.game-side` outranks styles.css's `.side` and `.btns`, which load after this file. */
+@media (max-width: 899.98px) {
+  .side.game-side { display: contents; }
+  .game-side > .resline, .game-side > .controls { order: 2; }
+  .game-side > .kbdline { order: 3; }
+  .stage { order: 1; }
+  .game-side > .btns.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 0 18px; border-top: 1px solid var(--rule); }
+  .controls .btn { justify-content: center; padding: 0 8px; font-size: 14.5px; }
+  .controls[data-confirming] .clear { display: none; }
+  .controls[data-confirming] .confirm { grid-column: 1 / -1; }
+}
+
+@media (min-width: 900px) {
+  .cartouche { padding: 22px 22px 20px; }
+  .cartouche p { font-size: var(--text-xl); }
+  .stones { --w: 54px; justify-content: flex-start; gap: var(--space-2); }
+  .stoneb { font-size: 27px; }
+  .resline { justify-content: flex-start; text-align: left; }
+  .confirm { grid-template-columns: auto auto; justify-content: start; }
+}
