@@ -58,6 +58,7 @@ export async function refill(opts: RefillOptions): Promise<RefillReport> {
     save(result.puzzle);
     used.add(result.answer);
     report.created.push(slot.id);
+    result.logSaved();
     return true;
   };
   const capped = () => report.created.length >= (opts.limit ?? Infinity);
@@ -99,12 +100,13 @@ async function fillSlot(
   used: ReadonlySet<string>,
   { llm, lists, version, maxTries = 6, log }: RefillOptions,
   report: RefillReport,
-): Promise<{ puzzle: wordpathV1.PuzzleBody; answer: string } | null> {
+): Promise<{ puzzle: wordpathV1.PuzzleBody; answer: string; logSaved: () => void } | null> {
   const rejected: { answer: string; reason: string }[] = [];
   const reasons: string[] = [];
   for (let i = 0; i < maxTries; i++) {
     let stage: Stage = 'propose';
     let c: Candidate | undefined;
+    let built: { puzzle: wordpathV1.PuzzleBody; answer: string } | undefined;
     // Wall-clock seconds per finished stage, for the progress line.
     const timings: string[] = [];
     let t = performance.now();
@@ -140,8 +142,7 @@ async function fillSlot(
       // The engine's seed key: the date for a daily, the id for unlimited.
       const puzzle = buildPuzzle(c, { lists, version, id: slot.id, seedKey: slot.date ?? slot.id, level: slot.level, date: slot.date });
       lap();
-      progress('saved');
-      return { puzzle, answer: c.answer };
+      built = { puzzle, answer: c.answer };
     } catch (e) {
       const reason = (e as Error).message;
       if (stage !== 'gates') lap(); // gates is synchronous and not timed
@@ -154,6 +155,8 @@ async function fillSlot(
       reasons.push(c ? `${stage} (${c.answer}): ${reason}` : `${stage}: ${reason}`);
       if (c) rejected.push({ answer: c.answer, reason });
     }
+    // Outside the try, and logged by the caller after the save: a throwing logger must not turn a built puzzle into a rejection or lose it.
+    if (built) return { ...built, logSaved: () => progress('saved') };
   }
   report.failed.push({ id: slot.id, reasons });
   return null;

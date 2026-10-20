@@ -63,9 +63,10 @@ export function createOpenRouterLlm(
 
   /** One completion's text, as a JSON object. Retries 408, 429, and 5xx; a refused key, no credits, the free daily limit, or no provider for the request stops the run. */
   async function ask(stage: keyof Spent, model: string, messages: { role: 'system' | 'user'; content: string }[]): Promise<string> {
-    // Every reply is a short JSON object, so low reasoning effort and a 2,000-token cap keep a call from spending its time on long hidden
-    // thinking (on shared free capacity that made a refill crawl). A reply cut off at the cap fails its try with a message saying so. The free endpoints lack structured_outputs
-    // (a json_schema request finds no endpoint and 404s), so ask for JSON mode, which they support; the prompts state each reply's shape and the shared guards reject a wrong one.
+    // Every reply is a short JSON object, so low reasoning effort and a 2,000-token cap keep a call from spending its time on long
+    // hidden thinking (on shared free capacity that made a refill crawl). A reply cut off at the cap fails its try with a message saying so.
+    // The free endpoints lack structured_outputs (a json_schema request finds no endpoint and 404s), so ask for JSON mode, which they
+    // support; the prompts state each reply's shape and the shared guards reject a wrong one.
     // require_parameters routes only to providers that honor response_format.
     const body = JSON.stringify({ model, messages, max_tokens: MAX_TOKENS, reasoning: { effort: 'low' }, provider: { require_parameters: true }, response_format: { type: 'json_object' } });
     for (let attempt = 1; ; attempt++) {

@@ -271,6 +271,19 @@ describe('refill', () => {
     expect(lines[0]).not.toMatch(/review/);
   });
 
+  it('saves the puzzle before logging, so a logger that throws never turns it into a rejection', async () => {
+    seed({ skip: [0] });
+    const f = fakes();
+    const log = vi.fn<(line: string) => void>((line) => {
+      if (line.endsWith('saved')) throw new Error('logger broke');
+    });
+    await expect(f.run({ log })).rejects.toThrow('logger broke');
+    // Saved before the logger ran, and never retried as a rejected try.
+    expect(loadStore(dir).dailies.some((p) => p.date === TODAY)).toBe(true);
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(f.llm.propose).toHaveBeenCalledTimes(1);
+  });
+
   it('logs a line when the run aborts', async () => {
     seed({ skip: [0] });
     const f = fakes();
