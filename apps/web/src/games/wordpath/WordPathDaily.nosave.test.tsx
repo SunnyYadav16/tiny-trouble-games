@@ -1,6 +1,6 @@
 // Its own file: canPersist() caches its first probe per module, so storage must be blocked before anything asks.
 import { wordpathV1 } from '@ttg/engine';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
 import { stubLayout } from '../../test/layout';
@@ -25,6 +25,7 @@ it('says progress is not saved when storage throws, still plays to a solve, and 
   const { container } = render(<WordPathDaily now={() => new Date(2026, 10, 2, 9)} onBack={() => {}} onUnlimited={() => {}} />);
   expect(screen.getByText(NOTICE)).toBeInTheDocument();
   await screen.findByText(puzzle.clue);
+  await waitFor(() => expect(container.querySelectorAll('.tile')).toHaveLength(49)); // past the 6×6 probe
   const tiles = [...container.querySelectorAll<HTMLButtonElement>('.tile')];
   for (const c of wordpathV1.parsePuzzle(puzzle)!.solutions[7]!) await user.click(tiles[c]!);
   expect(screen.getByRole('heading', { name: 'Solved' })).toBeInTheDocument();
