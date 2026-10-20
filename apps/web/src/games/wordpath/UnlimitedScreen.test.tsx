@@ -116,7 +116,9 @@ describe('UnlimitedScreen', () => {
     expect(saved.state.wrongAttempts).toBe(1);
     first.unmount();
     const afterUnmount = loadActive(unlimitedKeys('hard').active)!;
-    expect(afterUnmount.state).toEqual(saved.state);
+    // Not the wrong route itself: findByText returns as it settles (until then the line and the live region both match),
+    // and that settle's save can land after `saved` was read.
+    expect(afterUnmount.state).toMatchObject({ route: saved.state.route, wrongAttempts: 1 });
 
     const requested = serve({ easy: 4, normal: 4, hard: 4 });
     const again = open();

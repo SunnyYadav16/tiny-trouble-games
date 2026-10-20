@@ -30,3 +30,11 @@ HTMLDialogElement.prototype.showModal = function showModal() {
 HTMLDialogElement.prototype.close = function close() {
   this.removeAttribute('open');
 };
+
+// jsdom has no layout, so offsetParent is always null. GSAP reads that as "not rendered" and, to read a transform (clearProps),
+// moves the element into <html> and back, which drops focus to <body>. A browser reports the body for an element in the page.
+Object.defineProperty(HTMLElement.prototype, 'offsetParent', {
+  get(this: HTMLElement) {
+    return this.isConnected && this !== document.body ? document.body : null;
+  },
+});

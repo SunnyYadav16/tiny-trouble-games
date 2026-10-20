@@ -30,7 +30,9 @@ function open(today = new Date(2026, 10, 2, 9, 30)) {
   const onUnlimited = vi.fn<() => void>();
   const view = render(<WordPathDaily now={() => today} onBack={onBack} onUnlimited={onUnlimited} />);
   const tiles = () => [...view.container.querySelectorAll<HTMLButtonElement>('.tile')];
-  return { ...view, onBack, onUnlimited, tiles };
+  // The clue shows while the board is still probing at 6×6; taps before the 7×7 board is up are lost.
+  const ready = () => waitFor(() => expect(tiles()).toHaveLength(49));
+  return { ...view, onBack, onUnlimited, tiles, ready };
 }
 
 beforeEach(() => {
@@ -40,11 +42,11 @@ beforeEach(() => {
 describe('WordPathDaily', () => {
   it("plays today's puzzle under a header with the date", async () => {
     const fetch = serve({ '/wordpath/2026-11-02.json': NOV2 });
-    const { tiles, onBack } = open();
+    const { ready, onBack } = open();
     expect(screen.getByRole('heading', { level: 1, name: 'Word Path' })).toBeInTheDocument();
     expect(screen.getByText('Nov 2')).toBeInTheDocument();
     await screen.findByText(NOV2.clue);
-    await waitFor(() => expect(tiles()).toHaveLength(49)); // the clue shows while the board is still probing at 6×6
+    await ready();
     expect(fetch).toHaveBeenCalledWith('/wordpath/2026-11-02.json');
     await userEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(onBack).toHaveBeenCalledOnce();
@@ -103,8 +105,8 @@ describe('WordPathDaily', () => {
     saveResult(DAILY.results, { id: 'wp-2026-11-01', date: '2026-11-01', outcome: 'solved', timeMs: 9000, wrongAttempts: 0, size: 7, level: 'normal' });
     serve({ '/wordpath/2026-11-02.json': NOV2 });
     const user = userEvent.setup();
-    const { tiles } = open();
-    await screen.findByText(NOV2.clue);
+    const { tiles, ready } = open();
+    await ready();
     expect(screen.getByText('1-day streak')).toBeInTheDocument();
     for (const c of solve(NOV2, 7)) await user.click(tiles()[c]!);
 
@@ -170,8 +172,8 @@ describe('WordPathDaily', () => {
   it('starts fresh and plays when the saved session is not valid JSON', async () => {
     localStorage.setItem(DAILY.active, '{oops');
     serve({ '/wordpath/2026-11-02.json': NOV2 });
-    const { tiles } = open();
-    await screen.findByText(NOV2.clue);
+    const { tiles, ready } = open();
+    await ready();
     await userEvent.click(tiles()[solve(NOV2, 7)[0]!]!);
     expect(loadActive(DAILY.active)).toMatchObject({ puzzleId: NOV2.id, date: '2026-11-02', size: 7, state: { route: [solve(NOV2, 7)[0]] } });
   });

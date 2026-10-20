@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import gsap from 'gsap';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { stubLayout } from './test/layout';
@@ -11,6 +12,8 @@ beforeEach(() => {
 });
 
 const page = () => screen.findByRole('heading', { level: 2, name: 'Unlimited' });
+/** Plays the screen's entrance to its end now; the end clears the inline styles it set, and focus must outlast that. */
+const entered = (c: HTMLElement) => gsap.getTweensOf(c.querySelector('.screen')).forEach((t) => t.progress(1));
 
 describe('App', () => {
   it('goes Home → Word Path page → daily, and Back returns to the page, then Home', async () => {
@@ -56,12 +59,14 @@ describe('App', () => {
 
   it('moves focus to the new screen\'s heading on each change, but not on the first render', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    const { container } = render(<App />);
     expect(document.body).toHaveFocus();
     await user.click(screen.getByRole('link', { name: /^Word Path\./ }));
     await page();
+    entered(container);
     expect(screen.getByRole('heading', { level: 1, name: 'Word Path' })).toHaveFocus();
     await user.click(screen.getByRole('button', { name: 'Back' }));
+    entered(container);
     expect(screen.getByRole('heading', { level: 1, name: 'Tiny Trouble Games' })).toHaveFocus();
   });
 });
