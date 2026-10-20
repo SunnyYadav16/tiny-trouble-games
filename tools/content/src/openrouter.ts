@@ -1,18 +1,6 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 import { LlmAuthError, LlmQuotaError, type Llm, type Spent } from './llm';
-import {
-  GUESSES_SCHEMA,
-  parseCandidate,
-  parseGuesses,
-  parseReview,
-  PROPOSE_SCHEMA,
-  PROPOSE_SYSTEM,
-  proposePrompt,
-  REVIEW_SCHEMA,
-  REVIEW_SYSTEM,
-  reviewPrompt,
-  solvePrompt,
-} from './prompts';
+import { parseCandidate, parseGuesses, parseReview, PROPOSE_SYSTEM, proposePrompt, REVIEW_SYSTEM, reviewPrompt, solvePrompt } from './prompts';
 
 /**
  * N27, from openrouter.ai/api/v1/models (read 2026-10-19): free (`:free`) models from two labs, both listing
@@ -34,8 +22,6 @@ interface Completion {
   choices?: { finish_reason?: string | null; message?: { content?: unknown }; error?: OpenRouterError }[];
   usage?: { cost?: unknown };
 }
-
-const jsonSchema = (name: string, schema: object) => ({ type: 'json_schema', json_schema: { name, strict: true, schema } });
 
 /**
  * A 403 that blocked this one request's content, per the errors docs: moderation (`reasons`, `flagged_input`),
@@ -74,10 +60,12 @@ export function createOpenRouterLlm(
     'X-OpenRouter-Title': 'Tiny Trouble Games',
   };
 
-  /** One completion's text, as JSON in `schema`. Retries 408, 429, and 5xx; a refused key, no credits, or the free daily limit stops the run. */
-  async function ask(stage: keyof Spent, model: string, messages: { role: 'system' | 'user'; content: string }[], schema: object): Promise<string> {
-    // Effort and output cap mirror the other backends and bound the cost of one call. require_parameters routes only to providers that honor response_format.
-    const body = JSON.stringify({ model, messages, max_tokens: 16_000, reasoning: { effort: 'medium' }, provider: { require_parameters: true }, response_format: jsonSchema(stage, schema) });
+  /** One completion's text, as a JSON object. Retries 408, 429, and 5xx; a refused key, no credits, the free daily limit, or no provider for the request stops the run. */
+  async function ask(stage: keyof Spent, model: string, messages: { role: 'system' | 'user'; content: string }[]): Promise<string> {
+    // Effort and output cap mirror the other backends and bound the cost of one call. The free endpoints lack structured_outputs
+    // (a json_schema request finds no endpoint and 404s), so ask for JSON mode, which they support; the prompts state each reply's shape and the shared guards reject a wrong one.
+    // require_parameters routes only to providers that honor response_format.
+    const body = JSON.stringify({ model, messages, max_tokens: 16_000, reasoning: { effort: 'medium' }, provider: { require_parameters: true }, response_format: { type: 'json_object' } });
     for (let attempt = 1; ; attempt++) {
       const res = await fetchFn(ENDPOINT, { method: 'POST', headers, body, signal: AbortSignal.timeout(TIMEOUT_MS) });
       if (res.ok) {
@@ -95,6 +83,7 @@ export function createOpenRouterLlm(
       const error = ((await res.json().catch(() => ({}))) as Completion).error;
       const detail = `${model} HTTP ${res.status}: ${error?.message ?? res.statusText}`;
       if (res.status === 401 || (res.status === 403 && !contentBlocked(error?.metadata))) throw new LlmAuthError(`OpenRouter rejected the API key: ${detail}`);
+      if (res.status === 404 && /no endpoints/i.test(error?.message ?? '')) throw new LlmAuthError(`OpenRouter has no provider for ${model} with these settings: ${error?.message}`);
       if (res.status === 402) throw new LlmAuthError(`OpenRouter is out of credits; add credits or raise the key's limit, then run again: ${detail}`);
       if (res.status === 429 && dailyLimit(error?.message, res.headers)) {
         throw new LlmQuotaError(`OpenRouter free daily limit reached — run again tomorrow (or add credits to raise it): ${detail}`);
@@ -110,9 +99,9 @@ export function createOpenRouterLlm(
   return {
     spent,
     propose: async (r) =>
-      parseCandidate(await ask('propose', models.proposer, [{ role: 'system', content: PROPOSE_SYSTEM }, { role: 'user', content: proposePrompt(r) }], PROPOSE_SCHEMA)),
+      parseCandidate(await ask('propose', models.proposer, [{ role: 'system', content: PROPOSE_SYSTEM }, { role: 'user', content: proposePrompt(r) }])),
     review: async (r) =>
-      parseReview(await ask('review', models.reviewer, [{ role: 'system', content: REVIEW_SYSTEM }, { role: 'user', content: reviewPrompt(r) }], REVIEW_SCHEMA)),
-    solve: async (r) => parseGuesses(await ask('solve', models.reviewer, [{ role: 'user', content: solvePrompt(r) }], GUESSES_SCHEMA)),
+      parseReview(await ask('review', models.reviewer, [{ role: 'system', content: REVIEW_SYSTEM }, { role: 'user', content: reviewPrompt(r) }])),
+    solve: async (r) => parseGuesses(await ask('solve', models.reviewer, [{ role: 'user', content: solvePrompt(r) }])),
   };
 }

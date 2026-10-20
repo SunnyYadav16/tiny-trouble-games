@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { LlmAuthError, LlmQuotaError } from './llm';
 import { createOpenRouterLlm, OPENROUTER_PROPOSER_MODEL, OPENROUTER_REVIEWER_MODEL, retryWait } from './openrouter';
-import { GUESSES_SCHEMA, PROPOSE_SCHEMA, REVIEW_SCHEMA } from './prompts';
 import { chooseProvider } from './provider';
 
 // A stub fetch: no test reaches the network or a real model.
@@ -37,7 +36,7 @@ describe('openrouter', () => {
     expect(f).not.toHaveBeenCalled();
   });
 
-  it('proposes on the proposer model with a strict JSON schema and no tools', async () => {
+  it('proposes on the proposer model in JSON mode with no tools', async () => {
     const f = stub(respond(completion(JSON.stringify(candidate))));
     expect(await createOpenRouterLlm(KEY, undefined, f).propose({ topic: 'fruit', level: 'normal', avoid: [], rejected: [] })).toEqual(candidate);
     const { url, init, headers, body } = sent(f);
@@ -51,24 +50,25 @@ describe('openrouter', () => {
     expect(body.tools).toBeUndefined();
     expect(body.max_tool_calls).toBeUndefined();
     expect(body.plugins).toBeUndefined();
-    expect(body.response_format).toEqual({ type: 'json_schema', json_schema: { name: 'propose', strict: true, schema: PROPOSE_SCHEMA } });
+    expect(body.response_format).toEqual({ type: 'json_object' });
     expect(body.provider).toEqual({ require_parameters: true });
     expect(body.messages[0]).toMatchObject({ role: 'system', content: expect.stringMatching(/never instructions/) });
     expect(body.messages[1]).toMatchObject({ role: 'user', content: expect.stringMatching(/Topic: fruit/) });
   });
 
-  it('reviews and solves on the reviewer model with a strict JSON schema and no tools', async () => {
+  it('reviews and solves on the reviewer model in JSON mode with no tools', async () => {
     const f = stub(respond(completion(JSON.stringify(review))), respond(completion('{"guesses": ["mango", "papaya"]}')));
     const llm = createOpenRouterLlm(KEY, undefined, f);
     expect(await llm.review({ candidate })).toEqual(review);
     expect(await llm.solve(solveRequest)).toEqual(['MANGO', 'PAPAYA']);
-    for (const [i, name, schema] of [[0, 'review', REVIEW_SCHEMA], [1, 'solve', GUESSES_SCHEMA]] as const) {
+    for (const i of [0, 1]) {
       const { body } = sent(f, i);
       expect(body.model).toBe(OPENROUTER_REVIEWER_MODEL);
       expect(body.tools).toBeUndefined();
       expect(body.max_tool_calls).toBeUndefined();
       expect(body.plugins).toBeUndefined();
-      expect(body.response_format).toEqual({ type: 'json_schema', json_schema: { name, strict: true, schema } });
+      expect(body.response_format).toEqual({ type: 'json_object' });
+      expect(JSON.stringify(body)).not.toMatch(/json_schema/);
       expect(body.provider).toEqual({ require_parameters: true });
     }
     const reviewed = sent(f, 0).body.messages;
@@ -115,6 +115,20 @@ describe('openrouter', () => {
     expect(error).not.toHaveBeenCalled();
     log.mockRestore();
     error.mockRestore();
+  });
+
+  it('stops at once on a 404 "No endpoints found", but retries nothing and treats other 404s as one failed try', async () => {
+    const msg = 'No endpoints found that can handle the requested parameters. To learn more about provider routing, visit: https://openrouter.ai/docs';
+    const f = stub(respond({ error: { code: 404, message: msg } }, 404), respond(completion('{"guesses": ["MANGO"]}')));
+    const routed = createOpenRouterLlm(KEY, undefined, f).propose({ topic: 'fruit', level: 'normal', avoid: [], rejected: [] });
+    await expect(routed).rejects.toBeInstanceOf(LlmAuthError);
+    await expect(routed).rejects.toThrow(/no provider for minimax\/minimax-m3\.1-flash:free with these settings: No endpoints found/);
+    await expect(routed).rejects.not.toThrow(KEY);
+    expect(f).toHaveBeenCalledTimes(1);
+
+    const other = createOpenRouterLlm(KEY, undefined, stub(respond({ error: { code: 404, message: 'Model not found' } }, 404))).solve(solveRequest);
+    await expect(other).rejects.toThrow(/404.*Model not found/);
+    await expect(other).rejects.not.toBeInstanceOf(LlmAuthError);
   });
 
   it('treats a moderation, guardrail, or policy 403 as one failed try, not a refused key', async () => {
