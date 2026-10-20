@@ -19,11 +19,23 @@ interface Props {
 // Tasks 21 and 22 wire the stats dialog and how to play.
 const later = () => {};
 
-/** A session saved on an earlier day is finished first, under its own date. */
-function pickDaily(now: Date) {
-  const active = loadActive(DAILY.active);
-  const date = active?.date ?? localDateKey(now);
-  return { date, active, done: loadResults(DAILY.results)[`wp-${date}`] ?? null };
+interface Plan {
+  date: string;
+  /** The session to resume, or null for a fresh start. */
+  active: ActiveSession | null;
+  done: ResultRecord | null;
+  /** A saved session that must not outlive this open: it is already finished. */
+  drop: boolean;
+}
+
+/** R-C16: a session from an earlier day is finished first, under its own date, unless its result is already stored. */
+function pickDaily(today: string): Plan {
+  const saved = loadActive(DAILY.active);
+  const results = loadResults(DAILY.results);
+  const drop = !!saved && !!results[`wp-${saved.date}`];
+  const active = drop ? null : saved;
+  const date = active && active.date < today ? active.date : today;
+  return { date, active, done: results[`wp-${date}`] ?? null, drop };
 }
 
 /** A finished daily reopens on its last board: the answer route, solved or revealed, never replayed. */
@@ -37,32 +49,41 @@ const reopen = (r: ResultRecord, id: string, solutions: Record<number, number[]>
 
 /** Decides which daily to play and loads it; PuzzlePlayer does the playing. */
 export function WordPathDaily({ now, onBack, onUnlimited }: Props) {
-  const [{ date, active, done }] = useState(() => pickDaily(now()));
-  const [result, setResult] = useState(done);
+  const [today] = useState(() => localDateKey(now()));
+  const [plan, setPlan] = useState(() => pickDaily(today));
+  const { date, active, done } = plan;
+  const [finished, setFinished] = useState<ResultRecord | null>(null);
+  const result = finished ?? done;
   const [load, setLoad] = useState<LoadResult | null>(null);
 
   useEffect(() => {
-    // Already finished: a leftover session must not hold later days.
-    if (done && active) clearActive(DAILY.active);
-  }, [done, active]);
+    if (plan.drop) clearActive(DAILY.active);
+  }, [plan.drop]);
 
   useEffect(() => {
     let live = true;
     void loadPuzzle(dailyUrl(date)).then((r) => {
       if (!live) return;
-      if (!r.ok && active) clearActive(DAILY.active);
+      if (!r.ok && active && date < today) {
+        // An earlier day's session that cannot be finished must not hold today; today's own session stays, and the next open retries.
+        clearActive(DAILY.active);
+        const results = loadResults(DAILY.results);
+        setPlan({ date: today, active: null, done: results[`wp-${today}`] ?? null, drop: false });
+        return;
+      }
       setLoad(r);
     });
     return () => {
       live = false;
     };
-  }, [date, active]);
+  }, [date, active, today]);
 
   let body: ReactNode = null; // loading: the header alone, briefly
   if (load?.ok) {
     const { puzzle, solutions } = load;
     body = (
       <PuzzlePlayer
+        key={puzzle.id}
         keys={DAILY}
         puzzle={puzzle}
         solutions={solutions}
@@ -73,7 +94,7 @@ export function WordPathDaily({ now, onBack, onUnlimited }: Props) {
             <ResultView result={result} clue={puzzle.clue} answer={wordpathV1.recoverAnswer(puzzle) ?? ''} onUnlimited={onUnlimited} />
           )
         }
-        onDone={setResult}
+        onDone={setFinished}
       />
     );
   } else if (load?.reason === 'missing') {

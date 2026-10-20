@@ -1,5 +1,5 @@
 import { wordpathV1 } from '@ttg/engine';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { stubLayout } from '../../test/layout';
@@ -43,7 +43,7 @@ describe('WordPathDaily', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Word Path' })).toBeInTheDocument();
     expect(screen.getByText('Nov 2')).toBeInTheDocument();
     await screen.findByText(NOV2.clue);
-    expect(tiles()).toHaveLength(49);
+    await waitFor(() => expect(tiles()).toHaveLength(49)); // the clue shows while the board is still probing at 6×6
     expect(fetch).toHaveBeenCalledWith('/wordpath/2026-11-02.json');
     await userEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(onBack).toHaveBeenCalledOnce();
@@ -119,12 +119,44 @@ describe('WordPathDaily', () => {
     expect(loadActive(DAILY.active)).toMatchObject({ puzzleId: NOV2.id, date: '2026-11-02', size: 7, state: { route: [solve(NOV2, 7)[0]] } });
   });
 
-  it("removes a resumed session whose file is gone, so it cannot hold later days", async () => {
+  it("removes an earlier day's session whose file is gone and plays today's puzzle", async () => {
     saveActive(DAILY.active, { puzzleId: NOV1.id, date: '2026-11-01', size: 7, elapsedMs: 0, state: wordpathV1.initialState() });
-    serve({});
+    serve({ '/wordpath/2026-11-02.json': NOV2 });
     open();
-    await screen.findByRole('heading', { name: 'No Word Path puzzle today' });
+    await screen.findByText(NOV2.clue);
+    expect(screen.getByText('Nov 2')).toBeInTheDocument();
     expect(localStorage.getItem('ttg:wordpath:active')).toBeNull();
+  });
+
+  it('removes an earlier day session that is already finished and plays today', async () => {
+    saveResult(DAILY.results, { id: NOV1.id, date: '2026-11-01', outcome: 'solved', timeMs: 5000, wrongAttempts: 0, size: 7, level: 'normal' });
+    saveActive(DAILY.active, { puzzleId: NOV1.id, date: '2026-11-01', size: 7, elapsedMs: 0, state: wordpathV1.initialState() });
+    serve({ '/wordpath/2026-11-01.json': NOV1, '/wordpath/2026-11-02.json': NOV2 });
+    open();
+    await screen.findByText(NOV2.clue);
+    expect(screen.queryByRole('heading', { name: 'Solved' })).toBeNull();
+    expect(localStorage.getItem('ttg:wordpath:active')).toBeNull();
+  });
+
+  it.each([
+    ['the network fails', () => Promise.reject(new TypeError('offline'))],
+    ['the server answers 503', () => Promise.resolve(new Response('', { status: 503 }))],
+  ])("keeps today's session when %s, and resumes it on the next open", async (_, fail) => {
+    const route = solve(NOV2, 7).slice(0, 2);
+    const state = { ...wordpathV1.initialState(), route, wrongAttempts: 2 };
+    saveActive(DAILY.active, { puzzleId: NOV2.id, date: '2026-11-02', size: 7, elapsedMs: 9000, state });
+    vi.stubGlobal('fetch', vi.fn(fail));
+    const first = open();
+    await screen.findByRole('heading', { name: 'No Word Path puzzle today' });
+    expect(loadActive(DAILY.active)).toMatchObject({ elapsedMs: 9000, state: { route, wrongAttempts: 2 } });
+    first.unmount();
+
+    serve({ '/wordpath/2026-11-02.json': NOV2 });
+    const { tiles } = open();
+    await screen.findByText(NOV2.clue);
+    expect(tiles().flatMap((t, i) => (t.hasAttribute('data-selected') ? [i] : []))).toEqual(route);
+    window.dispatchEvent(new Event('pagehide'));
+    expect(loadActive(DAILY.active)).toMatchObject({ state: { route, wrongAttempts: 2 } });
   });
 
   it.each([

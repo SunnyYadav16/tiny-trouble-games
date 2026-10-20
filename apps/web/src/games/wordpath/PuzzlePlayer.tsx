@@ -35,13 +35,18 @@ function fits(s: ActiveSession, puzzle: wordpathV1.PuzzleBody): boolean {
   return s.puzzleId === puzzle.id && (SIZES as readonly number[]).includes(s.size) && route.every((c) => c < cells);
 }
 
-/** Plays one loaded puzzle: picks and locks the board size, runs the clock, saves progress, records the result. */
+/**
+ * Plays one loaded puzzle: picks and locks the board size, runs the clock, saves progress, records the result.
+ * One puzzle per instance: the parent must key it by puzzle.id.
+ */
 export function PuzzlePlayer({ keys, puzzle, solutions, date, resume, unlimited, result, onDone }: Props) {
-  const [start] = useState(() => {
-    if (!resume || fits(resume, puzzle)) return resume;
-    clearActive(keys.active);
-    return null;
+  const [{ start, stale }] = useState(() => {
+    const ok = !resume || fits(resume, puzzle);
+    return { start: ok ? resume : null, stale: !ok };
   });
+  useEffect(() => {
+    if (stale) clearActive(keys.active);
+  }, [stale, keys.active]);
 
   const [stage, setStage] = useState<HTMLDivElement | null>(null);
   const input = useLayoutInput(stage);
