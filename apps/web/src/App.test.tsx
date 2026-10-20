@@ -52,4 +52,15 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Back' }));
     expect(await screen.findByRole('button', { name: 'Continue' })).toBeInTheDocument(); // saved as the daily unmounted
   });
+
+  it('moves focus to the new screen\'s heading on each change, but not on the first render', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    expect(document.body).toHaveFocus();
+    await user.click(screen.getByRole('link', { name: /^Word Path\./ }));
+    await page();
+    expect(screen.getByRole('heading', { level: 1, name: 'Word Path' })).toHaveFocus();
+    await user.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByRole('heading', { level: 1, name: 'Tiny Trouble Games' })).toHaveFocus();
+  });
 });

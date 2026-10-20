@@ -1,6 +1,6 @@
 import { useGSAP } from '@gsap/react';
 import { wordpathV1 } from '@ttg/engine';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Home } from './games/wordpath/Home';
 import { prefersReduced, screenEnter } from './games/wordpath/motion';
 import { PlayPage } from './games/wordpath/PlayPage';
@@ -32,6 +32,14 @@ export function App() {
     },
     { scope: screen, dependencies: [view], revertOnUpdate: true },
   );
+
+  // A new screen takes keyboard and screen-reader focus on its heading; the first screen leaves focus alone.
+  const focused = useRef(view);
+  useEffect(() => {
+    if (focused.current === view) return;
+    focused.current = view;
+    screen.current?.querySelector('h1')?.focus();
+  }, [view]);
 
   const toPage = () => setView({ name: 'wordpath' });
   let body;

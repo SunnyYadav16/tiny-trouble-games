@@ -2,7 +2,7 @@ import { useGSAP } from '@gsap/react';
 import { wordpathV1 } from '@ttg/engine';
 import gsap from 'gsap';
 import { useId, useRef, useState } from 'react';
-import { load, save } from '../../shared/storage';
+import { canPersist, load, save } from '../../shared/storage';
 import { Board } from './Board';
 import { Dialog } from './Dialog';
 import { EXAMPLE } from './example';
@@ -12,7 +12,9 @@ import { WIDE, useMedia } from './useMedia';
 import './HowToPlay.css';
 
 const SEEN = 'ttg:wordpath:seen-howto';
-export const seenHowTo = (): boolean => load(SEEN, (v): v is true => v === true) === true;
+// In memory, since storage is the thing that failed: when this browser will not keep the flag, it holds for this visit.
+let seenThisVisit = false;
+export const seenHowTo = (): boolean => seenThisVisit || load(SEEN, (v): v is true => v === true) === true;
 
 // The demo is the engine playing the example: each frame is the state after one more tap, so it cannot drift from the rules.
 const GAME: wordpathV1.Game = { size: EXAMPLE.size, cells: EXAMPLE.cells, solution: EXAMPLE.solution };
@@ -47,6 +49,7 @@ export function HowToPlay({ onClose }: { onClose: () => void }) {
 
   const close = () => {
     save(SEEN, true);
+    if (!canPersist()) seenThisVisit = true;
     onClose();
   };
 
@@ -63,7 +66,7 @@ export function HowToPlay({ onClose }: { onClose: () => void }) {
         <ol className="steps">
           <li>Read the clue and work out the word.</li>
           <li>Tap touching tiles, up, down, left or right, to spell it. Tap the last tile again to undo.</li>
-          <li>Only one path in the grid spells the answer. Truly stuck? Give up shows it, but resets your streak.</li>
+          <li>Only one path in the grid spells the answer. Truly stuck? Give up shows it, but resets your daily streak.</li>
         </ol>
         <div className="btns">
           <button type="button" className="btn primary" onClick={close}>

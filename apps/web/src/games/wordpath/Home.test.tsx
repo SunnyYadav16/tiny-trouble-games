@@ -53,6 +53,13 @@ describe('Home', () => {
     expect(within(card()).getByText('In progress')).toBeInTheDocument();
   });
 
+  it('labels an earlier day\'s unfinished session with that day, not today', () => {
+    saveActive(DAILY.active, { puzzleId: 'wp-2026-10-19', date: '2026-10-19', size: 7, elapsedMs: 9_000, state: wordpathV1.initialState() });
+    const { card } = open();
+    expect(card()).toHaveAccessibleName('Word Path. Monday, October 19: In progress. Open to play.');
+    expect(within(card()).getByText('Mon, Oct 19')).toBeInTheDocument();
+  });
+
   it('reads "Solved in 0:41" with the streak once today is solved', () => {
     saveResult(DAILY.results, rec('2026-11-01', { timeMs: 70_000 }));
     saveResult(DAILY.results, rec('2026-11-02'));

@@ -21,14 +21,16 @@ export function pickDaily(today: string): Plan {
   return { date, active, done: results[`wp-${date}`] ?? null, drop };
 }
 
-/** "Sunday, November 1", or "Sun, Nov 1" where room is short. */
-export const dayLabel = (d: Date, long: boolean): string =>
-  d.toLocaleDateString('en-US', long ? { weekday: 'long', month: 'long', day: 'numeric' } : { weekday: 'short', month: 'short', day: 'numeric' });
+/** `'2026-11-01'` as "Sunday, November 1", or "Sun, Nov 1" where room is short. */
+export function dayLabel(date: string, long: boolean): string {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(y!, m! - 1, d!).toLocaleDateString('en-US', long ? { weekday: 'long', month: 'long', day: 'numeric' } : { weekday: 'short', month: 'short', day: 'numeric' });
+}
 
-/** What opening the daily will do, and a one-line status, as Home and the Word Path page show it. */
-export function dailyStatus(today: string): { action: 'Play daily' | 'Continue' | 'See result'; status: string } {
-  const { active, done } = pickDaily(today);
-  if (active) return { action: 'Continue', status: 'In progress' };
-  if (!done) return { action: 'Play daily', status: 'Not played yet' };
-  return { action: 'See result', status: done.outcome === 'solved' ? `Solved in ${formatDuration(done.timeMs)}` : 'Gave up' };
+/** What opening the daily will do, which day it is for, and a one-line status, as Home and the Word Path page show it. */
+export function dailyStatus(today: string): { date: string; action: 'Play daily' | 'Continue' | 'See result'; status: string } {
+  const { date, active, done } = pickDaily(today);
+  if (active) return { date, action: 'Continue', status: 'In progress' };
+  if (!done) return { date, action: 'Play daily', status: 'Not played yet' };
+  return { date, action: 'See result', status: done.outcome === 'solved' ? `Solved in ${formatDuration(done.timeMs)}` : 'Gave up' };
 }

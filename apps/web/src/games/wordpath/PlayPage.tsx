@@ -34,15 +34,15 @@ const BLANK = ' '.repeat(16);
 const noop = () => {};
 
 /** Today's daily, stats, and which levels have a saved puzzle, from this browser's storage. */
-function read(day: Date) {
-  const today = localDateKey(day);
+function read(now: Date) {
+  const today = localDateKey(now);
   const saved = new Set(wordpathV1.LEVELS.filter((l) => loadActive(unlimitedKeys(l).active)));
-  return { day, stats: loadStats(today), daily: dailyStatus(today), saved };
+  return { stats: loadStats(today), daily: dailyStatus(today), saved };
 }
 
 /** The Word Path page (N21): today's daily, and the Unlimited levels. Back from any game returns here. */
 export function PlayPage({ now, onBack, onDaily, onUnlimited }: Props) {
-  const [{ day, stats, daily, saved }, setData] = useState(() => read(now()));
+  const [{ stats, daily, saved }, setData] = useState(() => read(now()));
   // Read storage again once mounted: the game this page replaced saves its session as it unmounts, after this page's first render.
   // oxlint-disable-next-line react/set-state-in-effect -- storage is the external system here
   useEffect(() => setData(read(now())), [now]);
@@ -70,7 +70,7 @@ export function PlayPage({ now, onBack, onDaily, onUnlimited }: Props) {
       <main className="wp-page">
         <section className="hedge wp-today" aria-labelledby={todayId}>
           <h2 id={todayId}>Today's puzzle</h2>
-          <div className="date">{dayLabel(day, wide)}</div>
+          <div className="date">{dayLabel(daily.date, wide)}</div>
           <div className="meta">
             <span>{daily.status}</span>
             <span className="grow" />

@@ -39,7 +39,7 @@ export function Header({ title, subtitle, streak, onBack, onStats, onHowTo }: Pr
           <Icon d={BACK} />
         </button>
         <div className="title">
-          <h1>{title}</h1>
+          <h1 tabIndex={-1}>{title}</h1>
           {subtitle && <span>{subtitle}</span>}
         </div>
         <span className="spacer" />

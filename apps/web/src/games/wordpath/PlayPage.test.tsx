@@ -58,6 +58,12 @@ describe('PlayPage', () => {
     expect(onDaily).toHaveBeenCalledOnce();
   });
 
+  it('labels an earlier day\'s saved daily with that day', () => {
+    saveActive(DAILY.active, session('2026-10-19'));
+    open();
+    expect(within(today()).getByText('Mon, Oct 19')).toBeInTheDocument();
+  });
+
   it('offers See result for a finished daily, with the streak', async () => {
     saveResult(DAILY.results, rec({ id: 'wp-2026-11-01', date: '2026-11-01' }));
     saveResult(DAILY.results, rec({ id: 'wp-2026-11-02', timeMs: 41_000 }));

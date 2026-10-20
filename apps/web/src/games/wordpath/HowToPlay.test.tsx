@@ -23,6 +23,11 @@ describe('HowToPlay', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(3);
   });
 
+  it('step 3 says Give up shows the path but resets the daily streak', () => {
+    render(<HowToPlay onClose={() => {}} />);
+    expect(screen.getAllByRole('listitem')[2]).toHaveTextContent('Only one path in the grid spells the answer. Truly stuck? Give up shows it, but resets your daily streak.');
+  });
+
   it('shows the example on the 4×4 grid, hidden from keyboard and screen readers', () => {
     const { container } = render(<HowToPlay onClose={() => {}} />);
     const tiles = [...container.querySelectorAll<HTMLElement>('.tile')];

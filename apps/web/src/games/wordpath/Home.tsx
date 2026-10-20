@@ -22,10 +22,9 @@ const noop = () => {};
 
 /** The collection page (N7): one designed card per game. The whole Word Path card is one link to its page. */
 export function Home({ now, onOpen }: Props) {
-  const [{ day, status, streak }] = useState(() => {
-    const day = now();
-    const today = localDateKey(day);
-    return { day, status: dailyStatus(today).status, streak: loadStats(today).daily.current };
+  const [{ date, status, streak }] = useState(() => {
+    const today = localDateKey(now());
+    return { ...dailyStatus(today), streak: loadStats(today).daily.current };
   });
   const wide = useMedia(WIDE);
   const [howTo, setHowTo] = useState(false);
@@ -53,7 +52,7 @@ export function Home({ now, onOpen }: Props) {
       <header className="bar">
         <Mark />
         <div className="title">
-          <h1>Tiny Trouble Games</h1>
+          <h1 tabIndex={-1}>Tiny Trouble Games</h1>
         </div>
         <span className="spacer" />
         <button type="button" className="iconbtn" aria-label="How to play" onClick={() => setHowTo(true)}>
@@ -71,7 +70,7 @@ export function Home({ now, onOpen }: Props) {
           <a
             className="gc-body"
             href="#wordpath"
-            aria-label={`Word Path. ${dayLabel(day, true)}: ${status}.${streakText} Open to play.`}
+            aria-label={`Word Path. ${dayLabel(date, true)}: ${status}.${streakText} Open to play.`}
             onClick={(e) => {
               e.preventDefault();
               onOpen();
@@ -82,7 +81,7 @@ export function Home({ now, onOpen }: Props) {
             <h2>Word Path</h2>
             <p className="desc">Read the clue, then trace the one path of touching tiles that spells the answer.</p>
             <div className="gc-status">
-              <span>{dayLabel(day, wide)}</span>
+              <span>{dayLabel(date, wide)}</span>
               <span aria-hidden="true">·</span>
               <b>{status}</b>
               <span className="grow" />
