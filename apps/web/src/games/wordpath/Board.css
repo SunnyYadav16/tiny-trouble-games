@@ -2,7 +2,7 @@
 
 .hedge {
   --band: 10px;
-  position: relative;
+  position: relative; isolation: isolate; /* tile and petal z-indexes stay inside the board */
   padding: var(--band);
   border-radius: 16px;
   background:

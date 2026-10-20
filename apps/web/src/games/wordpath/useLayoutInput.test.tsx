@@ -1,5 +1,5 @@
 import { act, render } from '@testing-library/react';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LayoutInput } from './layout';
 import { useLayoutInput } from './useLayoutInput';
@@ -39,11 +39,13 @@ function stubResizeObserver() {
 }
 
 let seen: LayoutInput;
-function Probe() {
+function Probe({ report }: { report: (input: LayoutInput) => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  seen = useLayoutInput(ref);
+  const input = useLayoutInput(ref);
+  useEffect(() => report(input), [report, input]);
   return <div ref={ref} />;
 }
+const report = (input: LayoutInput) => void (seen = input);
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -51,7 +53,7 @@ describe('useLayoutInput', () => {
   it('starts at zero size and follows the board slot', () => {
     stubMatchMedia(false);
     stubResizeObserver();
-    render(<Probe />);
+    render(<Probe report={report} />);
     expect(seen).toEqual({ width: 0, height: 0, finePointer: false });
     act(() => resize(640, 480));
     expect(seen).toEqual({ width: 640, height: 480, finePointer: false });
@@ -60,7 +62,7 @@ describe('useLayoutInput', () => {
   it('re-renders when the pointer changes from coarse to fine', () => {
     const setFine = stubMatchMedia(false);
     stubResizeObserver();
-    render(<Probe />);
+    render(<Probe report={report} />);
     expect(seen.finePointer).toBe(false);
     act(() => setFine(true));
     expect(seen.finePointer).toBe(true);
@@ -68,7 +70,7 @@ describe('useLayoutInput', () => {
 
   it('works without ResizeObserver (jsdom)', () => {
     stubMatchMedia(true);
-    render(<Probe />);
+    render(<Probe report={report} />);
     expect(seen).toEqual({ width: 0, height: 0, finePointer: true });
   });
 });

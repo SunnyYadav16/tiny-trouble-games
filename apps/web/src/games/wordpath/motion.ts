@@ -21,11 +21,11 @@ export function selectPop(tile: Element, reduced: boolean): Anim {
   return gsap.fromTo(tile, { scale: 0.86 }, { scale: 1, duration: 0.16, ease: EASE.out, overwrite: 'auto' });
 }
 
-/** The newest route segment grows out of the tile it leaves, in 120 ms. */
+/** The newest route segment grows out of the tile it leaves, from a visible stub (never scale 0), in 120 ms. */
 export function drawSegment(line: SVGLineElement, reduced: boolean): Anim {
   if (reduced) return instant();
   const svgOrigin = `${line.getAttribute('x1')} ${line.getAttribute('y1')}`;
-  return gsap.fromTo(line, { scale: 0, svgOrigin }, { scale: 1, svgOrigin, duration: 0.12, ease: EASE.out, overwrite: 'auto' });
+  return gsap.fromTo(line, { scale: 0.25, opacity: 0, svgOrigin }, { scale: 1, opacity: 1, svgOrigin, duration: 0.12, ease: EASE.out, overwrite: 'auto' });
 }
 
 /** A wrong route shakes ±6 px for 280 ms, then fades back; done well inside `WRONG_MS`. */

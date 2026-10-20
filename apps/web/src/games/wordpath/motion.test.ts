@@ -98,6 +98,12 @@ describe('motion', () => {
     expect(shake.duration() * 1000).toBeLessThan(wordpathV1.WRONG_MS);
   });
 
+  it('drawSegment grows from a visible stub, never from scale 0', () => {
+    const from = (drawSegment(segment(), false) as gsap.core.Tween).vars.startAt as { scale: number };
+    expect(from.scale).toBeGreaterThan(0);
+    expect(from.scale).toBeLessThan(1);
+  });
+
   it('countUp shows the final number at once under reduced motion', () => {
     const el = document.body.appendChild(document.createElement('span'));
     countUp({ el, to: 41, format: (n) => `0:${n}` }, true);
