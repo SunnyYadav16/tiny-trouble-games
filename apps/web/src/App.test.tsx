@@ -35,7 +35,8 @@ describe('App', () => {
     await vi.waitFor(() => expect(hard).toBeEnabled());
     await user.click(hard);
     expect(screen.getByText('Unlimited · Hard')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Back' }));
+    expect(await screen.findByRole('heading', { name: 'No Hard puzzles yet' })).toBeInTheDocument(); // the stub serves no puzzle files
+    await user.click(screen.getAllByRole('button', { name: 'Back' }).at(-1)!);
     await page();
   });
 

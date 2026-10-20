@@ -3,13 +3,13 @@ import { useEffect, useId, useState } from 'react';
 import { formatDuration, localDateKey } from '../../shared/daily';
 import { Board } from './Board';
 import { Header, StreakPill } from './Header';
-import { HowToPlay, seenHowTo } from './HowToPlay';
+import { seenHowTo } from './HowToPlay';
 import { INFO, Icon, NEXT } from './icons';
 import { loadUnlimitedIndex, type IndexResult } from './loadPuzzle';
 import { loadActive, unlimitedKeys } from './session';
 import { loadStats } from './stats';
-import { StatsDialog } from './StatsDialog';
 import { dailyStatus, dayLabel } from './today';
+import { useHeaderDialogs } from './useHeaderDialogs';
 import { WIDE, useMedia } from './useMedia';
 import './PlayPage.css';
 
@@ -48,8 +48,7 @@ export function PlayPage({ now, onBack, onDaily, onUnlimited }: Props) {
   useEffect(() => setData(read(now())), [now]);
   const wide = useMedia(WIDE);
   const [index, setIndex] = useState<IndexResult | null>(null);
-  const [showStats, setShowStats] = useState(false);
-  const [showHowTo, setShowHowTo] = useState(() => !seenHowTo());
+  const { openStats, openHowTo, dialogs } = useHeaderDialogs(stats, !seenHowTo());
   const todayId = useId();
   const unlId = useId();
 
@@ -66,7 +65,7 @@ export function PlayPage({ now, onBack, onDaily, onUnlimited }: Props) {
   const streak = stats.daily.current;
   return (
     <>
-      <Header title="Word Path" subtitle="" streak={null} onBack={onBack} onStats={() => setShowStats(true)} onHowTo={() => setShowHowTo(true)} />
+      <Header title="Word Path" subtitle="" streak={null} onBack={onBack} onStats={openStats} onHowTo={openHowTo} />
       <main className="wp-page">
         <section className="hedge wp-today" aria-labelledby={todayId}>
           <h2 id={todayId}>Today's puzzle</h2>
@@ -146,8 +145,7 @@ export function PlayPage({ now, onBack, onDaily, onUnlimited }: Props) {
         </section>
       </main>
 
-      {showStats && <StatsDialog {...stats} onClose={() => setShowStats(false)} />}
-      {showHowTo && <HowToPlay onClose={() => setShowHowTo(false)} />}
+      {dialogs}
     </>
   );
 }

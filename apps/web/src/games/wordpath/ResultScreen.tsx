@@ -5,6 +5,7 @@ import { INFINITY, Icon, LevelIcon, NEXT, STATS } from './icons';
 import { countUp, prefersReduced } from './motion';
 import type { ResultRecord } from './results';
 import { Stones } from './Stones';
+import { levelName } from './unlimited';
 import './ResultScreen.css';
 
 interface Props {
@@ -25,8 +26,6 @@ interface Props {
   focus?: boolean;
 }
 
-const LEVEL_NAME = { easy: 'Easy', normal: 'Normal', hard: 'Hard' } as const;
-
 /** The result in the play layout's side panel (R-C4): the board stays on the stage in its final state. */
 export function ResultScreen({ mode, result, clue, answer, onUnlimited, onNext, onStats, onToday, now = () => new Date(), focus }: Props) {
   const solved = result.outcome === 'solved';
@@ -34,7 +33,6 @@ export function ResultScreen({ mode, result, clue, answer, onUnlimited, onNext, 
   const heading = useRef<HTMLHeadingElement>(null);
   const time = useRef<HTMLElement>(null);
   const tries = useRef<HTMLElement>(null);
-  const level = LEVEL_NAME[result.level];
 
   useEffect(() => {
     if (focus) heading.current?.focus();
@@ -90,7 +88,7 @@ export function ResultScreen({ mode, result, clue, answer, onUnlimited, onNext, 
           <>
             {onNext && (
               <button type="button" className="btn primary big" onClick={onNext}>
-                Next {level} puzzle
+                Next {levelName(result.level)} puzzle
                 <Icon d={NEXT} />
               </button>
             )}

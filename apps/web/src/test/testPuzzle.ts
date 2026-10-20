@@ -4,12 +4,12 @@ const BLOCKED = ['AMONG', 'GAMMA', 'MAMMA', 'MANGA', 'MANNA'];
 
 /** Tests only: a real puzzle built by the engine. Defaults to MANGO, the engine tests' answer. */
 export function makeTestPuzzle(
-  opts: { id?: string; date?: string; answer?: string; level?: wordpathV1.Level } = {},
+  opts: { id?: string; seedKey?: string; date?: string; answer?: string; level?: wordpathV1.Level } = {},
 ): wordpathV1.PuzzleBody {
-  const { id = 'wp-test', date, answer = 'MANGO', level = 'normal' } = opts;
+  const { id = 'wp-test', seedKey = id, date, answer = 'MANGO', level = 'normal' } = opts;
   return wordpathV1.makePuzzle({
     id,
-    seedKey: id,
+    seedKey,
     ...(date === undefined ? {} : { date }),
     level,
     answer,

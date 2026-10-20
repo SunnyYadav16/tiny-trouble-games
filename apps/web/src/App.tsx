@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Home } from './games/wordpath/Home';
 import { prefersReduced, screenEnter } from './games/wordpath/motion';
 import { PlayPage } from './games/wordpath/PlayPage';
+import { UnlimitedScreen } from './games/wordpath/UnlimitedScreen';
 import { WordPathDaily } from './games/wordpath/WordPathDaily';
 import './App.css';
 
@@ -47,16 +48,7 @@ export function App() {
   else if (view.name === 'wordpath')
     body = <PlayPage now={now} onBack={() => setView({ name: 'home' })} onDaily={() => setView({ name: 'daily' })} onUnlimited={(level) => setView({ name: 'unlimited', level })} />;
   else if (view.name === 'daily') body = <WordPathDaily now={now} onBack={toPage} onUnlimited={toPage} />;
-  else
-    // Task 23 replaces this with the unlimited screen.
-    body = (
-      <main className="placeholder">
-        <p>Unlimited · {view.level[0]!.toUpperCase() + view.level.slice(1)}</p>
-        <button type="button" className="btn" onClick={toPage}>
-          Back
-        </button>
-      </main>
-    );
+  else body = <UnlimitedScreen level={view.level} now={now} onBack={toPage} />;
 
   return (
     <div className="screen" ref={screen}>
