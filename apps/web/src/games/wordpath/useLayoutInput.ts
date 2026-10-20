@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { LayoutInput } from './layout';
+import { useMedia } from './useMedia';
 
 const FINE = '(pointer: fine) and (hover: hover)';
 
@@ -10,14 +11,7 @@ const FINE = '(pointer: fine) and (hover: hover)';
  */
 export function useLayoutInput(stage: HTMLElement | null): LayoutInput {
   const [box, setBox] = useState({ width: 0, height: 0 });
-  const [finePointer, setFinePointer] = useState(() => window.matchMedia(FINE).matches);
-
-  useEffect(() => {
-    const mq = window.matchMedia(FINE);
-    const onChange = () => setFinePointer(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
+  const finePointer = useMedia(FINE);
 
   useEffect(() => {
     if (!stage || typeof ResizeObserver === 'undefined') return;

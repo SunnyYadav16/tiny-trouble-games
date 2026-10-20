@@ -137,6 +137,3 @@ kbd {
   .play { display: grid; grid-template-columns: 470px minmax(0, 1fr); align-content: stretch; padding: 0; gap: 0; }
   .side { padding: var(--space-7) var(--space-6) var(--space-6) var(--space-7); gap: 26px; border-right: 1px solid var(--rule); }
 }
-
-/* home: one centred page holding the game card */
-.page { width: 100%; max-width: 960px; margin: 0 auto; padding: var(--space-6) var(--space-4); }

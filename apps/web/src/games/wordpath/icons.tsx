@@ -18,6 +18,16 @@ export const FLAG = 'M6 21V4|M6 4.5h10.5l-2 3.8 2 3.7H6';
 export const CHECK = 'M5 12.5l4.5 4.5L19 7.5';
 export const NEXT = 'M5 12h13M13 6l6 6-6 6';
 export const INFO = 'M20.5 12a8.5 8.5 0 1 1-17 0a8.5 8.5 0 1 1 17 0|M12 11v5.5M12 7.6h.01';
+export const REPLAY = 'M4.5 12a7.5 7.5 0 1 0 2.2-5.3|M4.5 4.5v3.8h3.8';
+
+/** The collection's mark: a plot with a lantern path laid across it. Decorative beside the collection's name. */
+export const Mark = () => (
+  <svg className="mark" viewBox="0 0 32 32" aria-hidden="true" fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="26" height="26" rx="7" stroke="currentColor" strokeWidth="2" />
+    <path d="M9 23V16h7v-7h7" stroke="var(--lantern)" strokeWidth="2.6" />
+    <circle cx="9" cy="23" r="2.4" fill="var(--lantern)" stroke="none" />
+  </svg>
+);
 
 /** Each level's path shape: one bend, a few bends, a turn at every tile. Same stroke as the other icons. */
 const LEVEL_PATH = {

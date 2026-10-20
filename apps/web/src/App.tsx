@@ -1,5 +1,9 @@
-import { useState } from 'react';
-import type { wordpathV1 } from '@ttg/engine';
+import { useGSAP } from '@gsap/react';
+import { wordpathV1 } from '@ttg/engine';
+import { useRef, useState } from 'react';
+import { Home } from './games/wordpath/Home';
+import { prefersReduced, screenEnter } from './games/wordpath/motion';
+import { PlayPage } from './games/wordpath/PlayPage';
 import { WordPathDaily } from './games/wordpath/WordPathDaily';
 import './App.css';
 
@@ -11,35 +15,44 @@ export type View =
   | { name: 'daily' }
   | { name: 'unlimited'; level: Level };
 
-// Placeholder home until Task 22 replaces it with the real Home and Word Path page.
+const now = () => new Date();
+
+/** Home → the Word Path page → daily or an Unlimited level; Back from a game returns to the page, Back from the page returns Home. */
 export function App() {
   const [view, setView] = useState<View>({ name: 'home' });
+  const screen = useRef<HTMLDivElement>(null);
 
-  if (view.name === 'home') {
-    return (
+  // Each change of screen rises into place; the first screen just appears.
+  const shown = useRef(view);
+  useGSAP(
+    () => {
+      if (shown.current === view) return;
+      shown.current = view;
+      screenEnter(screen.current!, prefersReduced());
+    },
+    { scope: screen, dependencies: [view], revertOnUpdate: true },
+  );
+
+  const toPage = () => setView({ name: 'wordpath' });
+  let body;
+  if (view.name === 'home') body = <Home now={now} onOpen={toPage} />;
+  else if (view.name === 'wordpath')
+    body = <PlayPage now={now} onBack={() => setView({ name: 'home' })} onDaily={() => setView({ name: 'daily' })} onUnlimited={(level) => setView({ name: 'unlimited', level })} />;
+  else if (view.name === 'daily') body = <WordPathDaily now={now} onBack={toPage} onUnlimited={toPage} />;
+  else
+    // Task 23 replaces this with the unlimited screen.
+    body = (
       <main className="placeholder">
-        <h1>Tiny Trouble Games</h1>
-        <div className="btns">
-          <button type="button" className="btn primary" onClick={() => setView({ name: 'wordpath' })}>
-            Word Path
-          </button>
-          <button type="button" className="btn" onClick={() => setView({ name: 'daily' })}>
-            Daily
-          </button>
-        </div>
+        <p>Unlimited · {view.level[0]!.toUpperCase() + view.level.slice(1)}</p>
+        <button type="button" className="btn" onClick={toPage}>
+          Back
+        </button>
       </main>
     );
-  }
-  if (view.name === 'daily') {
-    const toPage = () => setView({ name: 'wordpath' });
-    return <WordPathDaily now={() => new Date()} onBack={toPage} onUnlimited={toPage} />;
-  }
+
   return (
-    <main className="placeholder">
-      <p>{view.name}</p>
-      <button type="button" className="btn" onClick={() => setView({ name: 'home' })}>
-        Back
-      </button>
-    </main>
+    <div className="screen" ref={screen}>
+      {body}
+    </div>
   );
 }

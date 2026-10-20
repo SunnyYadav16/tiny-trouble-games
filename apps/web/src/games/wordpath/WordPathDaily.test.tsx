@@ -227,4 +227,14 @@ describe('WordPathDaily', () => {
     await userEvent.click(screen.getAllByRole('button', { name: 'Back' }).at(-1)!);
     expect(onBack).toHaveBeenCalledOnce();
   });
+
+  it('opens how to play from the header', async () => {
+    serve({ '/wordpath/2026-11-02.json': NOV2 });
+    open();
+    await screen.findByText(NOV2.clue);
+    await userEvent.click(screen.getByRole('button', { name: 'How to play' }));
+    expect(screen.getByRole('dialog', { name: 'How to play' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Got it' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
 });

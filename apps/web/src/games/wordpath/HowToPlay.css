@@ -1,0 +1,20 @@
+/* How to play: steps, then the example under them on a phone; the example beside them from 820px. */
+
+.dialog.howto { width: min(760px, calc(100vw - 32px)); }
+.howto .panel { display: grid; gap: 22px; }
+
+.howto .example { order: 1; display: grid; justify-items: center; gap: var(--space-2); }
+.howto .cap { font-size: 14px; color: var(--ink-2); }
+
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4); counter-reset: step; }
+.steps li { display: grid; grid-template-columns: 34px 1fr; gap: var(--space-3); font-size: 16px; line-height: 1.45; text-wrap: pretty; counter-increment: step; }
+.steps li::before {
+  content: counter(step); width: 30px; height: 30px; display: grid; place-items: center;
+  border: 1.5px solid var(--ink); border-radius: 50%; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.howto .btns { margin-top: 22px; }
+
+@media (min-width: 820px) {
+  .howto .panel { grid-template-columns: auto 1fr; gap: 36px; align-items: center; }
+  .howto .example { order: 0; }
+}

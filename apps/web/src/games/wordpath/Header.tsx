@@ -14,6 +14,17 @@ interface Props {
   onHowTo: () => void;
 }
 
+/** "4-day streak" in a pill; a phone shows the number and keeps the words for screen readers. */
+export const StreakPill = ({ streak }: { streak: number }) => (
+  <span className="streak">
+    <Icon d={FLAME} />
+    <span>
+      {streak}
+      <span className="unit">-day streak</span>
+    </span>
+  </span>
+);
+
 // In memory, since storage is the thing that failed: a dismissal lasts for this visit.
 let noticeDismissed = false;
 

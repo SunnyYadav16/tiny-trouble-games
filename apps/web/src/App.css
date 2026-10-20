@@ -1,3 +1,5 @@
-/* Placeholder home; Task 22 replaces this file along with the placeholder in App.tsx. */
+/* The screen the app swaps on each view change; it fills #root like a view would. */
+.screen { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+/* The unlimited placeholder until Task 23 replaces it. */
 .placeholder { max-width: 960px; margin: 0 auto; padding: var(--space-6) var(--space-4); display: grid; gap: var(--space-4); justify-items: start; }
-.placeholder h1 { margin: 0; font-size: var(--text-xl); font-weight: 700; font-variation-settings: "wdth" 88; letter-spacing: -0.01em; }

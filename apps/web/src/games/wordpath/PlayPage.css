@@ -1,0 +1,106 @@
+/* The Word Path page (N21): today's plot, then the Unlimited register; side by side from 1180px.
+   Phone first. Each level row's button stretches over the row with ::after, so the plot is part of the target. */
+
+.wp-page { flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 16px 14px 18px; }
+.wp-page h2 { margin: 0; font-size: 30px; line-height: 1; font-weight: 750; font-variation-settings: "wdth" 82, "opsz" 48; letter-spacing: -.02em; }
+
+/* today: a hedge panel (the band's padding and radius give way to the panel's) */
+.wp-page .wp-today { display: grid; gap: 12px; padding: 20px 18px 18px; border-radius: 18px; color: var(--on-hedge); }
+.wp-today .date { margin-top: -4px; font-size: 15px; font-weight: 600; }
+.wp-today .meta {
+  display: flex; gap: 10px; align-items: center; padding: 9px 0; font-size: var(--text-sm);
+  border-top: 1px solid rgb(238 241 230 / .22); border-bottom: 1px solid rgb(238 241 230 / .22);
+}
+.wp-today .meta .grow { flex: 1; }
+.wp-today .streak { background: rgb(0 0 0 / .22); color: var(--on-hedge); }
+.wp-today p { display: none; margin: 0; font-size: 15px; line-height: 1.45; opacity: .86; }
+.wp-today .btn.light { justify-content: center; background: var(--on-hedge); border-color: var(--on-hedge); color: var(--hedge); }
+
+/* unlimited */
+.wp-unl { display: grid; gap: 8px; align-content: start; }
+.wp-unl > p { margin: 0 0 6px; max-width: 52ch; font-size: 14.5px; line-height: 1.45; color: var(--ink-2); }
+.unl-note { display: flex; gap: 10px; align-items: center; margin: 0 0 6px; font-size: var(--text-sm); font-weight: 600; color: var(--ink); }
+.unl-note svg { width: 18px; height: 18px; flex: none; fill: none; stroke: var(--ink-2); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+.register { margin: 5px; border: 1px solid var(--ink); outline: 1px solid var(--ink); outline-offset: 4px; }
+
+.lvl { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; padding: 14px 14px 14px 12px; transition: background-color 160ms var(--ease-out); }
+.lvl + .lvl { border-top: 1px solid var(--rule); }
+.lvl:has(.lvl-btn:focus-visible) { outline: 3px solid var(--focus); outline-offset: -3px; }
+
+.lvl .mini .hedge { --band: 5px; border-radius: 9px; }
+.lvl .mini .plot { border-radius: 4px; }
+
+.lvl-btn {
+  all: unset; box-sizing: border-box; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center;
+  color: var(--ink); font-family: var(--font); cursor: pointer;
+}
+.lvl-btn::after { content: ""; position: absolute; inset: 0; }
+.lvl-btn:focus-visible { outline: none; } /* the row carries the ring */
+.lvl-btn:disabled { cursor: default; }
+
+.lvl .txt { display: grid; min-width: 0; }
+.lvl .name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 22px; line-height: 1; font-weight: 750; font-variation-settings: "wdth" 84, "opsz" 36; letter-spacing: -.015em; }
+.lvl .tag { padding: 4px 9px; border-radius: 999px; background: var(--lantern); color: var(--lantern-ink); font-size: 12.5px; font-weight: 700; letter-spacing: .02em; }
+.lvl .desc { max-width: 40ch; font-size: var(--text-sm); line-height: 1.4; color: var(--ink-2); }
+.lvl .stat { margin-top: 5px; font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+.lvl .nums { display: none; grid-template-columns: auto 2.6em; gap: 2px 12px; align-items: baseline; font-size: 14px; color: var(--ink-2); text-align: right; }
+.lvl .nums b { color: var(--ink); font-size: 16px; font-variant-numeric: tabular-nums; }
+
+.lvl .go {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 40px; height: 40px;
+  border: 1.5px solid var(--ink); border-radius: var(--radius-lg); font-size: var(--text-base); font-weight: 600;
+  transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-hover) ease;
+}
+.lvl .go > span { display: none; }
+.lvl .go[data-cont] { background: var(--hedge); border-color: var(--hedge); color: var(--on-hedge); }
+.lvl .go svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--dur-ui) var(--ease-out); }
+.lvl-btn:active .go { transform: scale(.97); }
+
+/* a level with no puzzles yet waits quietly: a dashed tag where Play would be, the plot set back */
+.lvl[data-off] .mini { opacity: .6; }
+.lvl .go.soon { display: none; border: 1.5px dashed var(--rule); color: var(--ink-2); white-space: nowrap; } /* a phone says it in the stat line */
+
+@media (hover: hover) {
+  .lvl:has(.lvl-btn:enabled:hover) { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+  .lvl-btn:enabled:hover .go svg { transform: translateX(3px); }
+  .wp-today .btn.light:not(:disabled):hover { background: color-mix(in srgb, var(--on-hedge) 86%, var(--hedge)); border-color: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lvl-btn:active .go, .lvl-btn:enabled:hover .go svg { transform: none; }
+  .wp-today .btn.light:active { background: color-mix(in srgb, var(--on-hedge) 86%, var(--hedge)); }
+}
+
+@media (min-width: 900px) {
+  .wp-page { width: 100%; max-width: 860px; margin: 0 auto; gap: 40px; padding: 40px 24px; }
+  .wp-page h2 { font-size: 40px; }
+  .wp-page .wp-today { gap: 18px; padding: 34px 32px 32px; border-radius: var(--radius-3xl); }
+  .wp-today .date { margin-top: -6px; font-size: var(--text-md); }
+  .wp-today .meta { padding: 12px 0; font-size: 15px; }
+  .wp-today p { display: block; }
+
+  .wp-unl { gap: 14px; }
+  .wp-unl > p { margin-bottom: 8px; font-size: var(--text-md); }
+  .unl-note { font-size: 15px; }
+
+  .lvl { gap: clamp(18px, 2vw, 26px); padding: 20px 26px 20px 20px; }
+  .lvl .mini .hedge { --band: 7px; border-radius: var(--radius-lg); }
+  .lvl .mini .plot { border-radius: var(--radius-sm); }
+  .lvl-btn { grid-template-columns: minmax(0, 1fr) auto auto; gap: clamp(18px, 2vw, 26px); }
+  .lvl .name { gap: 12px; margin-bottom: 6px; font-size: 30px; }
+  .lvl .desc { font-size: var(--text-base); }
+  .lvl .stat { display: none; }
+  .lvl .nums { display: grid; }
+  .lvl .go { width: auto; min-width: 128px; height: 44px; padding: 0 16px; } /* one width, so the rows line up */
+  .lvl .go > span { display: inline; }
+  .lvl .go.soon { display: inline-flex; padding: 0 14px; font-size: 14.5px; }
+}
+
+@media (min-width: 1180px) {
+  .wp-page {
+    max-width: none; margin: 0; display: grid; grid-template-columns: clamp(340px, 30vw, 430px) minmax(0, 1fr);
+    gap: 56px; align-items: start; align-content: center; padding: 40px clamp(40px, 5vw, 72px);
+  }
+}

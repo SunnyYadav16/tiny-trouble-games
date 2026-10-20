@@ -2,14 +2,16 @@ import { wordpathV1 } from '@ttg/engine';
 import { useEffect, useState, type ReactNode } from 'react';
 import { formatDateLabel, localDateKey } from '../../shared/daily';
 import { Header } from './Header';
+import { HowToPlay } from './HowToPlay';
 import { BACK, INFINITY, Icon } from './icons';
 import { dailyUrl, loadPuzzle, type LoadResult } from './loadPuzzle';
 import { PuzzlePlayer } from './PuzzlePlayer';
 import { loadResults, type ResultRecord } from './results';
 import { ResultScreen } from './ResultScreen';
-import { DAILY, clearActive, loadActive, type ActiveSession } from './session';
+import { DAILY, clearActive, type ActiveSession } from './session';
 import { loadStats } from './stats';
 import { StatsDialog } from './StatsDialog';
+import { pickDaily } from './today';
 import './WordPathDaily.css';
 
 interface Props {
@@ -17,28 +19,6 @@ interface Props {
   /** Both return to the Word Path page (N21). */
   onBack: () => void;
   onUnlimited: () => void;
-}
-
-// Task 22 wires how to play.
-const later = () => {};
-
-interface Plan {
-  date: string;
-  /** The session to resume, or null for a fresh start. */
-  active: ActiveSession | null;
-  done: ResultRecord | null;
-  /** A saved session that must not outlive this open: it is already finished. */
-  drop: boolean;
-}
-
-/** R-C16: a session from an earlier day is finished first, under its own date, unless its result is already stored. */
-function pickDaily(today: string): Plan {
-  const saved = loadActive(DAILY.active);
-  const results = loadResults(DAILY.results);
-  const drop = !!saved && !!results[`wp-${saved.date}`];
-  const active = drop ? null : saved;
-  const date = active && active.date < today ? active.date : today;
-  return { date, active, done: results[`wp-${date}`] ?? null, drop };
 }
 
 /** A finished daily reopens on its last board: the answer route, solved or revealed, never replayed. */
@@ -55,6 +35,7 @@ export function WordPathDaily({ now, onBack, onUnlimited }: Props) {
   const [today, setToday] = useState(() => localDateKey(now()));
   const [plan, setPlan] = useState(() => pickDaily(today));
   const [showStats, setShowStats] = useState(false);
+  const [showHowTo, setShowHowTo] = useState(false);
   const { date, active, done } = plan;
   const [finished, setFinished] = useState<ResultRecord | null>(null);
   const result = finished ?? done;
@@ -136,9 +117,10 @@ export function WordPathDaily({ now, onBack, onUnlimited }: Props) {
   const stats = loadStats(today); // after a finish this re-reads the saved results, so the streak is current
   return (
     <>
-      <Header title="Word Path" subtitle={formatDateLabel(date)} streak={stats.daily.current} onBack={onBack} onStats={() => setShowStats(true)} onHowTo={later} />
+      <Header title="Word Path" subtitle={formatDateLabel(date)} streak={stats.daily.current} onBack={onBack} onStats={() => setShowStats(true)} onHowTo={() => setShowHowTo(true)} />
       {body}
       {showStats && <StatsDialog {...stats} onClose={() => setShowStats(false)} />}
+      {showHowTo && <HowToPlay onClose={() => setShowHowTo(false)} />}
     </>
   );
 }

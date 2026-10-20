@@ -12,6 +12,9 @@
   background: var(--stone-2); font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 .streak svg { width: 18px; height: 18px; fill: none; stroke: var(--lantern); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+@media (max-width: 899.98px) {
+  .streak .unit { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
 
 .strip {
   flex: none; display: flex; align-items: center; gap: 12px; padding: 9px 28px;
