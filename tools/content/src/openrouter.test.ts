@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { LlmAuthError } from './llm';
+import { LlmAuthError, LlmQuotaError } from './llm';
 import { createOpenRouterLlm, OPENROUTER_PROPOSER_MODEL, OPENROUTER_REVIEWER_MODEL, retryWait } from './openrouter';
 import { GUESSES_SCHEMA, PROPOSE_SCHEMA, REVIEW_SCHEMA } from './prompts';
 import { chooseProvider } from './provider';
@@ -25,6 +25,11 @@ const sent = (f: ReturnType<typeof stub>, i = 0) => {
 const solveRequest = { clue: candidate.clue, length: 5, letters: 'AGMNO' };
 
 describe('openrouter', () => {
+  it('defaults to the free proposer and reviewer models (N27)', () => {
+    expect(OPENROUTER_PROPOSER_MODEL).toBe('minimax/minimax-m3.1-flash:free');
+    expect(OPENROUTER_REVIEWER_MODEL).toBe('google/gemma-4-31b-it:free');
+  });
+
   it('uses two different models and throws, before any request, when they match', () => {
     expect(OPENROUTER_PROPOSER_MODEL).not.toBe(OPENROUTER_REVIEWER_MODEL);
     const f = stub();
@@ -134,6 +139,27 @@ describe('openrouter', () => {
     await expect(failed).rejects.toThrow(/503.*No provider available/);
     await expect(failed).rejects.not.toBeInstanceOf(LlmAuthError);
     expect(down).toHaveBeenCalledTimes(3);
+  });
+
+  it('stops at once on a daily free-model 429 (message names the day, or Retry-After is over a minute)', async () => {
+    const day = { error: { code: 429, message: 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day' } };
+    const cases = [respond(day, 429), respond({ error: { code: 429, message: 'Rate limit exceeded' } }, 429, { 'Retry-After': '3600' })];
+    for (const reply of cases) {
+      const f = stub(reply, respond(completion('{"guesses": ["MANGO"]}')));
+      const quota = createOpenRouterLlm(KEY, undefined, f).solve(solveRequest);
+      await expect(quota).rejects.toBeInstanceOf(LlmQuotaError);
+      await expect(quota).rejects.toBeInstanceOf(LlmAuthError);
+      await expect(quota).rejects.toThrow(/free daily limit reached/);
+      await expect(quota).rejects.not.toThrow(KEY);
+      expect(f).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('still retries a per-minute free-model 429, then succeeds', async () => {
+    const minute = respond({ error: { code: 429, message: 'Rate limit exceeded: free-models-per-min.' } }, 429, { 'Retry-After': '0' });
+    const f = stub(minute, respond(completion('{"guesses": ["MANGO"]}')));
+    expect(await createOpenRouterLlm(KEY, undefined, f).solve(solveRequest)).toEqual(['MANGO']);
+    expect(f).toHaveBeenCalledTimes(2);
   });
 
   it('waits Retry-After seconds when it is a number, else 1 s then 2 s, and never over 60 s', () => {

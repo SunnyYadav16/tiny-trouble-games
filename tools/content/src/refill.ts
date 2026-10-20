@@ -15,7 +15,7 @@ export interface RefillReport {
   failed: { id: string; reasons: string[] }[];
   /** Failed tries per stage, to show what the run cost and where it was strict. */
   rejections: Record<Stage, number>;
-  /** Set when a model rejected the API key: the run stopped there. */
+  /** Set when the provider refused the API key or its daily quota ran out: the run stopped there. */
   aborted?: string;
 }
 
@@ -80,7 +80,7 @@ export async function refill(opts: RefillOptions): Promise<RefillReport> {
       }
     }
   } catch (e) {
-    // A refused key (or no credits) fails every later call too, so the run stops instead of burning maxTries per slot.
+    // A refused key, no credits, or a used-up daily quota fails every later call too, so the run stops instead of burning maxTries per slot.
     if (!(e instanceof LlmAuthError)) throw e;
     report.aborted = e.message;
   }

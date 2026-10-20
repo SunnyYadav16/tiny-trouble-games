@@ -42,7 +42,7 @@ if (llm.spent) {
   console.log(`cost: ${Object.entries(llm.spent).map(([stage, n]) => `${stage} ${usd(n)}`).join(', ')}, total ${usd(total)}`);
 }
 if (report.aborted) {
-  console.error(`stopped: ${report.aborted}`);
+  console.error(`stopped: ${report.aborted}; ${report.created.length} puzzles saved this run`);
   process.exit(1);
 }
 

@@ -6,7 +6,7 @@ import { wordpathV1 } from '@ttg/engine';
 import { buildPuzzle } from '@ttg/generator/build';
 import type { Candidate } from '@ttg/generator/gates';
 import { loadStore, saveDaily, saveUnlimited, usedAnswers } from '@ttg/generator/io';
-import { LlmAuthError, type Llm, type Review } from './llm';
+import { LlmAuthError, LlmQuotaError, type Llm, type Review } from './llm';
 import { addDays, refill } from './refill';
 
 type Level = wordpathV1.Level;
@@ -222,6 +222,17 @@ describe('refill', () => {
     expect(f.llm.propose).toHaveBeenCalledTimes(1);
     expect(f.log).toEqual([]);
     expect(loadStore(dir).dailies).toHaveLength(28);
+  });
+
+  it('stops at the daily quota after saving what it made, calling nothing more', async () => {
+    seed({ skip: [0, 1], counts: { easy: 39, normal: 39, hard: 39 } });
+    const f = fakes();
+    const first = f.llm.propose.getMockImplementation()!;
+    f.llm.propose.mockImplementationOnce(first).mockRejectedValueOnce(new LlmQuotaError('OpenRouter free daily limit reached'));
+    const report = await f.run();
+    expect(report).toMatchObject({ created: [`wp-${TODAY}`], failed: [], aborted: expect.stringMatching(/daily limit/) });
+    expect(f.llm.propose).toHaveBeenCalledTimes(2);
+    expect(loadStore(dir).dailies).toHaveLength(29);
   });
 
   it('stops after --limit new puzzles are saved, dailies first, failed slots not counted', async () => {
