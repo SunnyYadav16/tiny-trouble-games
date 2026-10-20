@@ -1,5 +1,5 @@
 import { wordpathV1 } from '@ttg/engine';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { stubLayout } from '../../test/layout';
@@ -10,6 +10,7 @@ import { WordPathDaily } from './WordPathDaily';
 
 const NOV1 = makeTestPuzzle({ id: 'wp-2026-11-01', date: '2026-11-01' });
 const NOV2 = makeTestPuzzle({ id: 'wp-2026-11-02', date: '2026-11-02' });
+const NOV3 = makeTestPuzzle({ id: 'wp-2026-11-03', date: '2026-11-03' });
 const solve = (p: wordpathV1.PuzzleBody, size: number) => wordpathV1.parsePuzzle(p)!.solutions[size]!;
 const SPA = '<!doctype html><html><body><div id="root"></div></body></html>';
 
@@ -96,6 +97,62 @@ describe('WordPathDaily', () => {
     await userEvent.click(tiles()[0]!);
     window.dispatchEvent(new Event('pagehide'));
     expect(loadActive(DAILY.active)).toBeNull();
+  });
+
+  it('on a solve: moves focus to the result, shows time and wrong tries, and lifts the header streak', async () => {
+    saveResult(DAILY.results, { id: 'wp-2026-11-01', date: '2026-11-01', outcome: 'solved', timeMs: 9000, wrongAttempts: 0, size: 7, level: 'normal' });
+    serve({ '/wordpath/2026-11-02.json': NOV2 });
+    const user = userEvent.setup();
+    const { tiles } = open();
+    await screen.findByText(NOV2.clue);
+    expect(screen.getByText('1-day streak')).toBeInTheDocument();
+    for (const c of solve(NOV2, 7)) await user.click(tiles()[c]!);
+
+    const heading = await screen.findByRole('heading', { name: 'Solved' });
+    expect(heading).toHaveFocus();
+    expect(screen.getByText('Time')).toBeInTheDocument();
+    expect(screen.getByText('Wrong tries')).toBeInTheDocument();
+    expect(screen.getByText(/Next daily puzzle in/)).toBeInTheDocument();
+    expect(screen.getByText('2-day streak')).toBeInTheDocument();
+    expect(tiles()).toHaveLength(49); // the board stays on the stage
+  });
+
+  it('does not move focus when a finished daily is reopened', async () => {
+    saveResult(DAILY.results, { id: 'wp-2026-11-02', date: '2026-11-02', outcome: 'solved', timeMs: 41_000, wrongAttempts: 1, size: 7, level: 'normal' });
+    serve({ '/wordpath/2026-11-02.json': NOV2 });
+    open();
+    expect(await screen.findByRole('heading', { name: 'Solved' })).not.toHaveFocus();
+  });
+
+  it('opens Stats from the header and from the result, and Escape returns focus to the opener', async () => {
+    saveResult(DAILY.results, { id: 'wp-2026-11-02', date: '2026-11-02', outcome: 'gave-up', timeMs: 187_000, wrongAttempts: 4, size: 7, level: 'normal' });
+    serve({ '/wordpath/2026-11-02.json': NOV2 });
+    const user = userEvent.setup();
+    open();
+    await screen.findByRole('heading', { name: 'Gave up' });
+    const opener = within(screen.getByRole('banner')).getByRole('button', { name: 'Stats' });
+    await user.click(opener);
+    const dialog = screen.getByRole('dialog', { name: 'Stats' });
+    expect(within(dialog).getByRole('region', { name: 'Daily' })).toHaveTextContent('Played1');
+    fireEvent(dialog, new Event('cancel', { cancelable: true }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(opener).toHaveFocus();
+
+    await user.click(within(screen.getByRole('main')).getByRole('button', { name: 'Stats' }));
+    expect(screen.getByRole('dialog', { name: 'Stats' })).toBeInTheDocument();
+  });
+
+  it("offers today's puzzle on the result once midnight passes, and opens it", async () => {
+    saveResult(DAILY.results, { id: NOV2.id, date: '2026-11-02', outcome: 'solved', timeMs: 5000, wrongAttempts: 0, size: 7, level: 'normal' });
+    serve({ '/wordpath/2026-11-02.json': NOV2, '/wordpath/2026-11-03.json': NOV3 });
+    let t = new Date(2026, 10, 2, 23, 59, 59);
+    render(<WordPathDaily now={() => t} onBack={() => {}} onUnlimited={() => {}} />);
+    await screen.findByRole('heading', { name: 'Solved' });
+    t = new Date(2026, 10, 3, 0, 0, 1);
+    fireEvent.click(await screen.findByRole('button', { name: "Play today's puzzle" }, { timeout: 3000 }));
+    expect(await screen.findByText('Nov 3')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Solved' })).toBeNull());
+    expect(await screen.findByRole('button', { name: 'Give up' })).toBeInTheDocument(); // playing today's puzzle
   });
 
   it('shows the no-puzzle screen when the file is the SPA page served with 200 (R-C5)', async () => {

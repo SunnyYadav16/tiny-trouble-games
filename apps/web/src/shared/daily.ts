@@ -16,6 +16,12 @@ export function formatDuration(ms: number): string {
   return `${Math.floor(total / 60)}:${pad(total % 60)}`;
 }
 
+/** `h:mm:ss`, seconds floored. */
+export function formatCountdown(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(total / 3600)}:${pad(Math.floor(total / 60) % 60)}:${pad(total % 60)}`;
+}
+
 /** `'2026-11-01'` to `'Nov 1'`. */
 export function formatDateLabel(date: string): string {
   const [y, m, d] = date.split('-').map(Number);

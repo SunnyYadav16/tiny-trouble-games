@@ -1,9 +1,4 @@
-/* Daily screens beside the play layout: the no-puzzle plot, and the interim result in the side panel. */
-
-.res-h { margin: 0; font-size: 44px; line-height: 1.05; font-weight: 750; font-variation-settings: "wdth" 82, "opsz" 48; letter-spacing: -.02em; text-wrap: balance; }
-.res-h[data-good] { color: var(--good-ink); }
-.res-clue { margin: 0; max-width: 36ch; font-size: var(--text-md); line-height: 1.45; color: var(--ink-2); }
-.res-nums { margin: 0; font-size: var(--text-md); font-weight: 600; font-variant-numeric: tabular-nums; }
+/* The no-puzzle screen beside the play layout. Its heading and text come from ResultScreen.css. */
 
 /* an empty hedged plot with its gate open at the bottom */
 .empty-plot { position: relative; width: 260px; height: 260px; border: 12px solid var(--hedge); border-radius: var(--radius-3xl); background: var(--stone-2); }
@@ -12,7 +7,6 @@
 .empty .res-h { font-size: 30px; }
 
 @media (max-width: 899.98px) {
-  .res-h { font-size: 34px; }
   .play.empty { justify-content: center; align-items: center; gap: 20px; padding-bottom: var(--space-6); text-align: center; }
   .empty .stage { order: -1; }
   .empty .side { align-items: center; }

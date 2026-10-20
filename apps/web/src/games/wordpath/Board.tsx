@@ -1,7 +1,7 @@
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- an ARIA grid of buttons (APG grid pattern); a <table> cannot hold the route SVG */
 import { useGSAP } from '@gsap/react';
 import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
-import { celebrate, drawSegment, selectPop, wrongShake } from './motion';
+import { celebrate, drawSegment, prefersReduced, selectPop, wrongShake } from './motion';
 import { RouteLine } from './RouteLine';
 import './Board.css';
 
@@ -18,7 +18,6 @@ interface Props {
   onTap: (cell: number) => void;
 }
 
-const prefersReduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const sameStart = (a: readonly number[], b: readonly number[]) => a.every((c, i) => c === b[i]);
 
 /**

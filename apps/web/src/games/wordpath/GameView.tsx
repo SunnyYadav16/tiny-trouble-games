@@ -2,7 +2,8 @@ import { wordpathV1 } from '@ttg/engine';
 import { useEffect, useId, useReducer, useRef, useState, type ReactNode, type Ref } from 'react';
 import { LiveRegion } from '../../shared/LiveRegion';
 import { Board, type RouteState } from './Board';
-import { CHECK, CLEAR, FLAG, Icon } from './icons';
+import { CLEAR, FLAG, Icon } from './icons';
+import { Stones } from './Stones';
 import './GameView.css';
 
 const { WRONG_MS, initialState, spell, step } = wordpathV1;
@@ -121,24 +122,7 @@ export function GameView({ game, clue, length, tile, initial, unlimited, showSho
               <p>{clue}</p>
             </div>
 
-            <div className="stones">
-              {Array.from({ length }, (_, i) => {
-                const ch = stoneText[i];
-                return ch ? (
-                  <div key={`${i}${ch}`} className={`stoneb ${kind ?? ''}`}>
-                    <span>{ch}</span>
-                  </div>
-                ) : (
-                  <div key={i} className="stoneb empty" aria-hidden="true" />
-                );
-              })}
-              {kind === 'solved' && (
-                <span className="ok">
-                  <Icon d={CHECK} />
-                  <span className="visually-hidden">Solved</span>
-                </span>
-              )}
-            </div>
+            <Stones text={stoneText} length={length} kind={kind} />
 
             <div ref={resRef} className="resline" data-good={state.status === 'won' || undefined} tabIndex={-1}>
               {state.status === 'won' && 'Solved'}

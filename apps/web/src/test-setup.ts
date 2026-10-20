@@ -21,3 +21,12 @@ afterEach(() => {
   cleanup();
   localStorage.clear();
 });
+
+// jsdom has no modal dialogs: showModal opens the dialog and focuses its first control, as browsers do.
+HTMLDialogElement.prototype.showModal = function showModal() {
+  this.setAttribute('open', '');
+  this.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')?.focus();
+};
+HTMLDialogElement.prototype.close = function close() {
+  this.removeAttribute('open');
+};

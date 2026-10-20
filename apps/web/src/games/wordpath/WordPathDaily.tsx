@@ -1,12 +1,15 @@
 import { wordpathV1 } from '@ttg/engine';
 import { useEffect, useState, type ReactNode } from 'react';
-import { formatDateLabel, formatDuration, localDateKey } from '../../shared/daily';
+import { formatDateLabel, localDateKey } from '../../shared/daily';
 import { Header } from './Header';
 import { BACK, INFINITY, Icon } from './icons';
 import { dailyUrl, loadPuzzle, type LoadResult } from './loadPuzzle';
 import { PuzzlePlayer } from './PuzzlePlayer';
 import { loadResults, type ResultRecord } from './results';
+import { ResultScreen } from './ResultScreen';
 import { DAILY, clearActive, loadActive, type ActiveSession } from './session';
+import { loadStats } from './stats';
+import { StatsDialog } from './StatsDialog';
 import './WordPathDaily.css';
 
 interface Props {
@@ -16,7 +19,7 @@ interface Props {
   onUnlimited: () => void;
 }
 
-// Tasks 21 and 22 wire the stats dialog and how to play.
+// Task 22 wires how to play.
 const later = () => {};
 
 interface Plan {
@@ -49,8 +52,9 @@ const reopen = (r: ResultRecord, id: string, solutions: Record<number, number[]>
 
 /** Decides which daily to play and loads it; PuzzlePlayer does the playing. */
 export function WordPathDaily({ now, onBack, onUnlimited }: Props) {
-  const [today] = useState(() => localDateKey(now()));
+  const [today, setToday] = useState(() => localDateKey(now()));
   const [plan, setPlan] = useState(() => pickDaily(today));
+  const [showStats, setShowStats] = useState(false);
   const { date, active, done } = plan;
   const [finished, setFinished] = useState<ResultRecord | null>(null);
   const result = finished ?? done;
@@ -78,6 +82,15 @@ export function WordPathDaily({ now, onBack, onUnlimited }: Props) {
     };
   }, [date, active, today]);
 
+  /** The next day has begun: leave the finished result for the new daily. */
+  const openToday = () => {
+    const next = localDateKey(now());
+    setToday(next);
+    setFinished(null);
+    setLoad(null);
+    setPlan(pickDaily(next));
+  };
+
   let body: ReactNode = null; // loading: the header alone, briefly
   if (load?.ok) {
     const { puzzle, solutions } = load;
@@ -91,7 +104,17 @@ export function WordPathDaily({ now, onBack, onUnlimited }: Props) {
         resume={done ? reopen(done, puzzle.id, solutions) : active}
         result={
           result && (
-            <ResultView result={result} clue={puzzle.clue} answer={wordpathV1.recoverAnswer(puzzle) ?? ''} onUnlimited={onUnlimited} />
+            <ResultScreen
+              mode="daily"
+              result={result}
+              clue={puzzle.clue}
+              answer={wordpathV1.recoverAnswer(puzzle) ?? ''}
+              focus={finished !== null}
+              now={now}
+              onUnlimited={onUnlimited}
+              onStats={() => setShowStats(true)}
+              onToday={openToday}
+            />
           )
         }
         onDone={setFinished}
@@ -110,10 +133,12 @@ export function WordPathDaily({ now, onBack, onUnlimited }: Props) {
     body = <EmptyPlot title="This puzzle won't open" text="Something is wrong with this puzzle file. Try again in a little while." onBack={onBack} />;
   }
 
+  const stats = loadStats(today); // after a finish this re-reads the saved results, so the streak is current
   return (
     <>
-      <Header title="Word Path" subtitle={formatDateLabel(date)} streak={null} onBack={onBack} onStats={later} onHowTo={later} />
+      <Header title="Word Path" subtitle={formatDateLabel(date)} streak={stats.daily.current} onBack={onBack} onStats={() => setShowStats(true)} onHowTo={later} />
       {body}
+      {showStats && <StatsDialog {...stats} onClose={() => setShowStats(false)} />}
     </>
   );
 }
@@ -142,35 +167,5 @@ function EmptyPlot({ title, text, onBack, onUnlimited }: { title: string; text: 
         <div className="empty-plot" aria-hidden="true" />
       </div>
     </main>
-  );
-}
-
-/** Placeholder until Task 21's ResultScreen takes this slot in the side panel. */
-function ResultView({ result, clue, answer, onUnlimited }: { result: ResultRecord; clue: string; answer: string; onUnlimited: () => void }) {
-  const solved = result.outcome === 'solved';
-  return (
-    <>
-      <h2 className="res-h" data-good={solved || undefined}>
-        {solved ? 'Solved' : 'Gave up'}
-      </h2>
-      <div className="stones">
-        <span className="visually-hidden">The answer is {answer}</span>
-        {[...answer].map((ch, i) => (
-          <div key={i} className={`stoneb ${solved ? 'solved' : 'revealed'}`} aria-hidden="true">
-            <span>{ch}</span>
-          </div>
-        ))}
-      </div>
-      <p className="res-clue">{clue}</p>
-      <p className="res-nums">
-        Time {formatDuration(result.timeMs)} · Wrong tries {result.wrongAttempts}
-      </p>
-      <div className="btns">
-        <button type="button" className="btn primary big" onClick={onUnlimited}>
-          <Icon d={INFINITY} />
-          Play unlimited
-        </button>
-      </div>
-    </>
   );
 }

@@ -1,0 +1,32 @@
+/* The result, in the side panel. `.res-h` and `.res-clue` also head the no-puzzle screen. */
+
+.result { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.res-h { margin: 0; font-size: 34px; line-height: 1.05; font-weight: 750; font-variation-settings: "wdth" 82, "opsz" 48; letter-spacing: -.02em; text-wrap: balance; }
+.res-h[data-good] { color: var(--good-ink); }
+.res-h:focus { outline: none; }
+.res-h:focus-visible { outline: 3px solid var(--focus); outline-offset: 6px; border-radius: var(--radius-sm); }
+.res-clue { margin: 0; max-width: 36ch; font-size: var(--text-md); line-height: 1.45; color: var(--ink-2); }
+
+/* time and wrong tries, side by side and never added together */
+.ledger { display: grid; grid-template-columns: repeat(2, auto); justify-content: start; margin: 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.ledger div { padding: 14px 28px 14px 0; margin-right: 28px; border-right: 1px solid var(--rule); }
+.ledger div:last-child { padding-right: 0; margin-right: 0; border-right: 0; }
+.ledger dt { font-size: var(--text-sm); color: var(--ink-2); font-weight: 600; }
+.ledger dd { min-width: 3ch; margin: 2px 0 0; font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; font-variation-settings: "wdth" 85; }
+
+.note, .next { margin: 0; color: var(--ink-2); }
+.note { font-size: 14px; line-height: 1.4; }
+.next { font-size: var(--text-base); }
+.next b { color: var(--ink); font-size: 19px; font-variant-numeric: tabular-nums; }
+
+/* phone: the panel sits above the board (R-C14); buttons share the row and wrap */
+@media (max-width: 899.98px) {
+  .result .btn { flex: 1 1 auto; justify-content: center; }
+  .result .btn.today { flex: none; align-self: flex-start; }
+}
+
+@media (min-width: 900px) {
+  .result { gap: 26px; }
+  .res-h { font-size: 44px; }
+}

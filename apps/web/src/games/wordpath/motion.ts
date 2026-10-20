@@ -3,6 +3,8 @@ import gsap from 'gsap';
 /** GSAP twins of the CSS `--ease-out` and `--ease-in-out` tokens. */
 export const EASE = { out: 'power4.out', inOut: 'power4.inOut' } as const;
 
+export const prefersReduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 type Anim = gsap.core.Tween | gsap.core.Timeline;
 
 /** Reduced motion swaps movement for a fade this long (seconds). */

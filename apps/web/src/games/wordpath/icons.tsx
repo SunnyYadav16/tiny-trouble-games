@@ -16,3 +16,17 @@ export const INFINITY = 'M8 8.5c-2 0-3.5 1.6-3.5 3.5S6 15.5 8 15.5c3.5 0 4.5-7 8
 export const CLEAR = 'M6 6l12 12M18 6L6 18';
 export const FLAG = 'M6 21V4|M6 4.5h10.5l-2 3.8 2 3.7H6';
 export const CHECK = 'M5 12.5l4.5 4.5L19 7.5';
+export const NEXT = 'M5 12h13M13 6l6 6-6 6';
+export const INFO = 'M20.5 12a8.5 8.5 0 1 1-17 0a8.5 8.5 0 1 1 17 0|M12 11v5.5M12 7.6h.01';
+
+/** Each level's path shape: one bend, a few bends, a turn at every tile. Same stroke as the other icons. */
+const LEVEL_PATH = {
+  easy: 'M3 15V8.5Q3 6 5.5 6H15',
+  normal: 'M2.5 15h5V10h5V5H16',
+  hard: 'M2 14V5.5h4.7V13h4.6V5.5H16',
+};
+export const LevelIcon = ({ level }: { level: keyof typeof LEVEL_PATH }) => (
+  <svg viewBox="0 0 18 18" aria-hidden="true">
+    <path d={LEVEL_PATH[level]} />
+  </svg>
+);
