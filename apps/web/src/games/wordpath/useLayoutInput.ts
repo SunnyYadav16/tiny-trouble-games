@@ -1,10 +1,14 @@
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useState } from 'react';
 import type { LayoutInput } from './layout';
 
 const FINE = '(pointer: fine) and (hover: hover)';
 
-/** Measures the board slot and the pointer type; both update live. */
-export function useLayoutInput(ref: RefObject<HTMLElement | null>): LayoutInput {
+/**
+ * Measures the board slot and the pointer type; both update live. The slot is the observed stage's
+ * content box minus the frame its CSS keeps around the plot (`--frame-x`, `--frame-y`, plain px).
+ * Takes the element, not a ref, so it follows a stage that remounts.
+ */
+export function useLayoutInput(stage: HTMLElement | null): LayoutInput {
   const [box, setBox] = useState({ width: 0, height: 0 });
   const [finePointer, setFinePointer] = useState(() => window.matchMedia(FINE).matches);
 
@@ -16,14 +20,19 @@ export function useLayoutInput(ref: RefObject<HTMLElement | null>): LayoutInput 
   }, []);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
+    if (!stage || typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(([entry]) => {
-      if (entry) setBox({ width: entry.contentRect.width, height: entry.contentRect.height });
+      if (!entry) return;
+      const css = getComputedStyle(stage);
+      const frame = (name: string) => parseFloat(css.getPropertyValue(name)) || 0;
+      setBox({
+        width: Math.max(0, entry.contentRect.width - frame('--frame-x')),
+        height: Math.max(0, entry.contentRect.height - frame('--frame-y')),
+      });
     });
-    ro.observe(el);
+    ro.observe(stage);
     return () => ro.disconnect();
-  }, [ref]);
+  }, [stage]);
 
   return { ...box, finePointer };
 }

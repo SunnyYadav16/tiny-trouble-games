@@ -1,0 +1,40 @@
+/* Play screens' top bar and the no-save strip under it. Selectors that meet styles.css's `.btn` rules
+   carry an extra class, because styles.css loads after component CSS. */
+
+.bar { flex: none; height: 64px; display: flex; align-items: center; gap: 14px; padding: 0 28px; border-bottom: 1px solid var(--rule); }
+.bar .title { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.bar h1 { margin: 0; font-size: var(--text-lg); line-height: 1.2; font-weight: 700; font-variation-settings: "wdth" 88; letter-spacing: -.01em; }
+.bar .title span { font-size: 14px; color: var(--ink-2); }
+.bar .spacer { flex: 1; }
+
+.streak {
+  display: inline-flex; align-items: center; gap: 4px; height: 36px; padding: 0 10px; border-radius: var(--radius-md);
+  background: var(--stone-2); font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.streak svg { width: 18px; height: 18px; fill: none; stroke: var(--lantern); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+
+.strip {
+  flex: none; display: flex; align-items: center; gap: 12px; padding: 9px 28px;
+  background: var(--stone-3); border-bottom: 1px solid var(--rule); font-size: 14.5px; line-height: 1.4;
+}
+.strip .warn { display: flex; color: var(--warn); }
+.strip .warn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.strip .btn.dismiss { flex: none; height: 34px; margin-left: auto; padding: 0 12px; font-size: 14px; }
+.strip .dismiss svg { display: none; }
+
+@media (prefers-color-scheme: dark) {
+  .strip .warn { color: #E58A9B; } /* the mockup's dark alert tint: --warn is too dim for a small icon here */
+}
+
+@media (max-width: 899.98px) {
+  .bar { height: 54px; padding: 0 12px; gap: 6px; }
+  .bar .title { flex-direction: column; align-items: flex-start; gap: 0; white-space: nowrap; }
+  .bar h1 { font-size: var(--text-md); line-height: 1.1; }
+  .bar .title span { font-size: var(--text-xs); }
+
+  .strip { align-items: flex-start; padding: 10px 12px 10px 14px; font-size: var(--text-sm); }
+  /* phone: an X icon button; the word stays as its accessible name */
+  .strip .btn.dismiss { width: 32px; height: 32px; padding: 0; justify-content: center; border: 0; }
+  .strip .dismiss svg { display: block; width: 20px; height: 20px; }
+  .strip .dismiss span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}

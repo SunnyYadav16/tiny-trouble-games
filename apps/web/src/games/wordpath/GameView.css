@@ -47,7 +47,7 @@
   .game-side > .resline, .game-side > .controls { order: 2; }
   .game-side > .kbdline { order: 3; }
   .stage { order: 1; }
-  .game-side > .btns.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 0 18px; border-top: 1px solid var(--rule); }
+  .game-side > .btns.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; padding: 10px 0 18px; border-top: 1px solid var(--rule); }
   .controls .btn { justify-content: center; padding: 0 8px; font-size: 14.5px; }
   .controls[data-confirming] .clear { display: none; }
   .controls[data-confirming] .confirm { grid-column: 1 / -1; }

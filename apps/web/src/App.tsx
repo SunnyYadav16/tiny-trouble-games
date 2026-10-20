@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { wordpathV1 } from '@ttg/engine';
+import { WordPathDaily } from './games/wordpath/WordPathDaily';
 import './App.css';
 
 type Level = wordpathV1.Level;
@@ -28,6 +29,10 @@ export function App() {
         </div>
       </main>
     );
+  }
+  if (view.name === 'daily') {
+    const toPage = () => setView({ name: 'wordpath' });
+    return <WordPathDaily now={() => new Date()} onBack={toPage} onUnlimited={toPage} />;
   }
   return (
     <main className="placeholder">

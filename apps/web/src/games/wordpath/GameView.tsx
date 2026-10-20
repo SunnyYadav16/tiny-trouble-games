@@ -1,7 +1,8 @@
 import { wordpathV1 } from '@ttg/engine';
-import { useEffect, useId, useReducer, useRef, useState, type Ref } from 'react';
+import { useEffect, useId, useReducer, useRef, useState, type ReactNode, type Ref } from 'react';
 import { LiveRegion } from '../../shared/LiveRegion';
 import { Board, type RouteState } from './Board';
+import { CHECK, CLEAR, FLAG, Icon } from './icons';
 import './GameView.css';
 
 const { WRONG_MS, initialState, spell, step } = wordpathV1;
@@ -21,6 +22,10 @@ interface Props {
   showShortcuts?: boolean;
   /** The board stage: the slot the play layout measures. It has no padding. */
   stageRef?: Ref<HTMLDivElement>;
+  /** Once there is a result, the side panel shows it in place of the clue and controls; the board stays as it ended. */
+  result?: ReactNode;
+  /** Stage decorations under the board (compass, scale bar). */
+  decor?: ReactNode;
   onChange: (s: State) => void;
   onFinish: (s: State) => void;
 }
@@ -42,22 +47,11 @@ function announce(game: wordpathV1.Game, prev: State, next: State): string {
   return `${game.cells[last]} selected, ${next.route.length} of ${game.solution.length}`;
 }
 
-const Icon = ({ d }: { d: string }) => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    {d.split('|').map((p) => (
-      <path key={p} d={p} />
-    ))}
-  </svg>
-);
-const CLEAR = 'M6 6l12 12M18 6L6 18';
-const FLAG = 'M6 21V4|M6 4.5h10.5l-2 3.8 2 3.7H6';
-const CHECK = 'M5 12.5l4.5 4.5L19 7.5';
-
 /**
  * The playable puzzle: the side panel (clue, answer stones, result line, controls) and the board stage,
  * as two siblings for the play layout's grid. Engine `step` decides everything; this only shows it.
  */
-export function GameView({ game, clue, length, tile, initial, unlimited, showShortcuts, stageRef, onChange, onFinish }: Props) {
+export function GameView({ game, clue, length, tile, initial, unlimited, showShortcuts, stageRef, result, decor, onChange, onFinish }: Props) {
   const [{ state, say }, dispatch] = useReducer(
     (m: Model, a: wordpathV1.Action): Model => {
       const next = step(game, m.state, a);
@@ -120,88 +114,92 @@ export function GameView({ game, clue, length, tile, initial, unlimited, showSho
   return (
     <>
       <div className="side game-side">
-        <div className="cartouche">
-          <span className="lbl">Clue</span>
-          <p>{clue}</p>
-        </div>
+        {result ?? (
+          <>
+            <div className="cartouche">
+              <span className="lbl">Clue</span>
+              <p>{clue}</p>
+            </div>
 
-        <div className="stones">
-          {Array.from({ length }, (_, i) => {
-            const ch = stoneText[i];
-            return ch ? (
-              <div key={`${i}${ch}`} className={`stoneb ${kind ?? ''}`}>
-                <span>{ch}</span>
-              </div>
-            ) : (
-              <div key={i} className="stoneb empty" aria-hidden="true" />
-            );
-          })}
-          {kind === 'solved' && (
-            <span className="ok">
-              <Icon d={CHECK} />
-              <span className="visually-hidden">Solved</span>
-            </span>
-          )}
-        </div>
+            <div className="stones">
+              {Array.from({ length }, (_, i) => {
+                const ch = stoneText[i];
+                return ch ? (
+                  <div key={`${i}${ch}`} className={`stoneb ${kind ?? ''}`}>
+                    <span>{ch}</span>
+                  </div>
+                ) : (
+                  <div key={i} className="stoneb empty" aria-hidden="true" />
+                );
+              })}
+              {kind === 'solved' && (
+                <span className="ok">
+                  <Icon d={CHECK} />
+                  <span className="visually-hidden">Solved</span>
+                </span>
+              )}
+            </div>
 
-        <div ref={resRef} className="resline" data-good={state.status === 'won' || undefined} tabIndex={-1}>
-          {state.status === 'won' && 'Solved'}
-          {state.status === 'gave-up' && `Gave up. The answer is ${answer}`}
-          {state.wrong && (
-            <>
-              <span className="word">{state.wrong.word}</span> is not {which} answer
-            </>
-          )}
-        </div>
+            <div ref={resRef} className="resline" data-good={state.status === 'won' || undefined} tabIndex={-1}>
+              {state.status === 'won' && 'Solved'}
+              {state.status === 'gave-up' && `Gave up. The answer is ${answer}`}
+              {state.wrong && (
+                <>
+                  <span className="word">{state.wrong.word}</span> is not {which} answer
+                </>
+              )}
+            </div>
 
-        {playing && (
-          <div className="btns controls" data-confirming={confirming || undefined}>
-            <button type="button" className="btn clear" aria-keyshortcuts={showShortcuts ? 'Escape' : undefined} onClick={() => dispatch({ type: 'clear' })}>
-              <Icon d={CLEAR} />
-              Clear
-              {showShortcuts && <kbd aria-hidden="true">Esc</kbd>}
-            </button>
-            {confirming ? (
-              <div className="confirm">
-                <span id={promptId}>{unlimited ? 'Give up? The answer will be shown.' : 'Give up? Your streak resets.'}</span>
-                <button
-                  type="button"
-                  className="btn primary"
-                  aria-describedby={promptId}
-                  onClick={() => {
-                    setAsk('closed');
-                    dispatch({ type: 'giveUp' });
-                    resRef.current?.focus();
-                  }}
-                >
-                  Yes, show answer
+            {playing && (
+              <div className="btns controls" data-confirming={confirming || undefined}>
+                <button type="button" className="btn clear" aria-keyshortcuts={showShortcuts ? 'Escape' : undefined} onClick={() => dispatch({ type: 'clear' })}>
+                  <Icon d={CLEAR} />
+                  Clear
+                  {showShortcuts && <kbd aria-hidden="true">Esc</kbd>}
                 </button>
-                <button ref={keepRef} type="button" className="btn" aria-describedby={promptId} onClick={() => setAsk('closed')}>
-                  Keep playing
-                </button>
+                {confirming ? (
+                  <div className="confirm">
+                    <span id={promptId}>{unlimited ? 'Give up? The answer will be shown.' : 'Give up? Your streak resets.'}</span>
+                    <button
+                      type="button"
+                      className="btn primary"
+                      aria-describedby={promptId}
+                      onClick={() => {
+                        setAsk('closed');
+                        dispatch({ type: 'giveUp' });
+                        resRef.current?.focus();
+                      }}
+                    >
+                      Yes, show answer
+                    </button>
+                    <button ref={keepRef} type="button" className="btn" aria-describedby={promptId} onClick={() => setAsk('closed')}>
+                      Keep playing
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    ref={giveUpRef}
+                    type="button"
+                    className="btn quiet giveup"
+                    data-returned={ask === 'closed' || undefined}
+                    onClick={() => setAsk('open')}
+                  >
+                    <Icon d={FLAG} />
+                    Give up
+                  </button>
+                )}
               </div>
-            ) : (
-              <button
-                ref={giveUpRef}
-                type="button"
-                className="btn quiet giveup"
-                data-returned={ask === 'closed' || undefined}
-                onClick={() => setAsk('open')}
-              >
-                <Icon d={FLAG} />
-                Give up
-              </button>
             )}
-          </div>
-        )}
 
-        {showShortcuts && playing && (
-          <p className="kbdline">
-            <span className="visually-hidden">Arrow keys move, Enter or Space selects, Escape clears.</span>
-            <span aria-hidden="true">
-              <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> move · <kbd>Enter</kbd> or <kbd>Space</kbd> selects · <kbd>Esc</kbd> clears
-            </span>
-          </p>
+            {showShortcuts && playing && (
+              <p className="kbdline">
+                <span className="visually-hidden">Arrow keys move, Enter or Space selects, Escape clears.</span>
+                <span aria-hidden="true">
+                  <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> move · <kbd>Enter</kbd> or <kbd>Space</kbd> selects · <kbd>Esc</kbd> clears
+                </span>
+              </p>
+            )}
+          </>
         )}
 
         <LiveRegion message={say} />
@@ -217,6 +215,7 @@ export function GameView({ game, clue, length, tile, initial, unlimited, showSho
           disabled={!playing}
           onTap={(cell) => dispatch({ type: 'tap', cell })}
         />
+        {decor}
       </div>
     </>
   );

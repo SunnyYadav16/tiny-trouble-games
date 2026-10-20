@@ -1,0 +1,21 @@
+/* PuzzlePlayer's stage. The frame is the room the stage keeps around the plot, in plain px so
+   useLayoutInput can read it: the hedge band on each side (Board.css: 10px, 18px from 900px), and on
+   desktop 32px gutters plus the scale bar (18px margin + 17px line). */
+.stage { --frame-x: 20px; --frame-y: 20px; isolation: isolate; }
+@media (min-width: 900px) {
+  .stage { --frame-x: 100px; --frame-y: 135px; }
+}
+
+/* the first frame, while the board slot is measured */
+.play[data-probe] { visibility: hidden; }
+
+/* survey marks: a compass rose top right (under the board if they meet) and a scale bar under the plot */
+.compass { position: absolute; top: 34px; right: 40px; z-index: -1; width: 54px; height: 54px; color: var(--ink-2); }
+.scalebar { display: flex; align-items: center; gap: 12px; margin-top: 18px; color: var(--ink-2); font-size: 13px; line-height: 17px; font-weight: 600; letter-spacing: .04em; }
+.scalebar i { display: flex; height: 7px; border: 1px solid var(--ink-2); }
+.scalebar b { width: 22px; }
+.scalebar b:nth-child(odd) { background: var(--ink-2); }
+
+@media (max-width: 899.98px) {
+  .compass, .scalebar { display: none; }
+}

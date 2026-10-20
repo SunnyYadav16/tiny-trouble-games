@@ -1,5 +1,5 @@
 import { act, render } from '@testing-library/react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LayoutInput } from './layout';
 import { useLayoutInput } from './useLayoutInput';
@@ -39,11 +39,12 @@ function stubResizeObserver() {
 }
 
 let seen: LayoutInput;
-function Probe({ report }: { report: (input: LayoutInput) => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const input = useLayoutInput(ref);
+function Probe({ report, frame }: { report: (input: LayoutInput) => void; frame?: [string, string] }) {
+  const [el, setEl] = useState<HTMLDivElement | null>(null);
+  const input = useLayoutInput(el);
   useEffect(() => report(input), [report, input]);
-  return <div ref={ref} />;
+  const style = frame && ({ '--frame-x': frame[0], '--frame-y': frame[1] } as CSSProperties);
+  return <div ref={setEl} style={style} />;
 }
 const report = (input: LayoutInput) => void (seen = input);
 
@@ -57,6 +58,16 @@ describe('useLayoutInput', () => {
     expect(seen).toEqual({ width: 0, height: 0, finePointer: false });
     act(() => resize(640, 480));
     expect(seen).toEqual({ width: 640, height: 480, finePointer: false });
+  });
+
+  it('subtracts the frame the stage declares around the plot', () => {
+    stubMatchMedia(true);
+    stubResizeObserver();
+    render(<Probe report={report} frame={['100px', '135px']} />);
+    act(() => resize(970, 836));
+    expect(seen).toEqual({ width: 870, height: 701, finePointer: true });
+    act(() => resize(60, 60));
+    expect(seen).toEqual({ width: 0, height: 0, finePointer: true });
   });
 
   it('re-renders when the pointer changes from coarse to fine', () => {
