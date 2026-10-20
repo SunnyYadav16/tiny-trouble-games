@@ -47,10 +47,12 @@ const contentBlocked = (m: unknown) =>
   ('reasons' in m || 'flagged_input' in m || 'patterns' in m || ['content_policy_violation', 'refusal'].includes(String((m as { error_type?: unknown }).error_type)));
 
 /**
- * A 429 for the free-model daily cap. openrouter.ai/docs/api_reference/limits names the cap (50/day, 20/min) but gives no
- * body marker, so: the message names the day (OpenRouter's reads "free-models-per-day"), or Retry-After is over a minute.
+ * A 429 for the free-model daily cap. openrouter.ai/docs/api_reference/limits: a platform 429 carries X-RateLimit-Limit for the
+ * limit hit, and the tiers are 20/min vs 50 or 1000/day, so a limit over 20 is the daily cap. Fallbacks: the message names the
+ * day (OpenRouter's reads "free-models-per-day"), or Retry-After is over a minute (sent only for provider-side limits, which also stop the run).
  */
-const dailyLimit = (message: string | undefined, retryAfter: string | null) => /per-day|daily/i.test(message ?? '') || Number(retryAfter) > 60;
+const dailyLimit = (message: string | undefined, headers: Headers) =>
+  Number(headers.get('x-ratelimit-limit')) > 20 || /per-day|daily/i.test(message ?? '') || Number(headers.get('retry-after')) > 60;
 
 /** Seconds before retry `attempt`: Retry-After when it is a number of seconds, else 1, 2, ...; never over 60. */
 export function retryWait(retryAfter: string | null, attempt: number): number {
@@ -94,7 +96,7 @@ export function createOpenRouterLlm(
       const detail = `${model} HTTP ${res.status}: ${error?.message ?? res.statusText}`;
       if (res.status === 401 || (res.status === 403 && !contentBlocked(error?.metadata))) throw new LlmAuthError(`OpenRouter rejected the API key: ${detail}`);
       if (res.status === 402) throw new LlmAuthError(`OpenRouter is out of credits; add credits or raise the key's limit, then run again: ${detail}`);
-      if (res.status === 429 && dailyLimit(error?.message, res.headers.get('retry-after'))) {
+      if (res.status === 429 && dailyLimit(error?.message, res.headers)) {
         throw new LlmQuotaError(`OpenRouter free daily limit reached — run again tomorrow (or add credits to raise it): ${detail}`);
       }
       if ((res.status === 408 || res.status === 429 || res.status >= 500) && attempt < TRIES) {

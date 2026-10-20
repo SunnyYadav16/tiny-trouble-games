@@ -44,7 +44,7 @@ export interface Llm {
   readonly spent?: Readonly<Spent>;
 }
 
-/** The provider refused the API key (invalid, expired, without permission, or out of credits): every later call fails too, so refill stops the run on it. */
+/** Any condition that makes every later call fail (a refused key, no credits, a used-up daily limit), so refill stops the run on it. */
 export class LlmAuthError extends Error {}
 
 /** The provider's free daily request limit is used up: every later call fails until it resets, so refill stops (and keeps what it saved) the same way as for a refused key. */

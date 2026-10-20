@@ -155,6 +155,17 @@ describe('openrouter', () => {
     }
   });
 
+  it('reads X-RateLimit-Limit: over 20 is the daily cap and stops, 20 is per-minute and retries', async () => {
+    const bare = (limit: string) => respond({ error: { code: 429, message: 'Rate limit exceeded' } }, 429, { 'X-RateLimit-Limit': limit, 'Retry-After': '0' });
+    const daily = stub(respond({ error: { code: 429, message: 'Rate limit exceeded' } }, 429, { 'X-RateLimit-Limit': '50' }), respond(completion('{"guesses": ["MANGO"]}')));
+    await expect(createOpenRouterLlm(KEY, undefined, daily).solve(solveRequest)).rejects.toBeInstanceOf(LlmQuotaError);
+    expect(daily).toHaveBeenCalledTimes(1);
+
+    const minute = stub(bare('20'), respond(completion('{"guesses": ["MANGO"]}')));
+    expect(await createOpenRouterLlm(KEY, undefined, minute).solve(solveRequest)).toEqual(['MANGO']);
+    expect(minute).toHaveBeenCalledTimes(2);
+  });
+
   it('still retries a per-minute free-model 429, then succeeds', async () => {
     const minute = respond({ error: { code: 429, message: 'Rate limit exceeded: free-models-per-min.' } }, 429, { 'Retry-After': '0' });
     const f = stub(minute, respond(completion('{"guesses": ["MANGO"]}')));
