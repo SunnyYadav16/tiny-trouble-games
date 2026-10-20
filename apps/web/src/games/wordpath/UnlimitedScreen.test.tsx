@@ -110,16 +110,53 @@ describe('UnlimitedScreen', () => {
   it('restores the route and counters after a reload mid-puzzle', async () => {
     const first = open();
     await ready(first.container);
-    await tap(first.container, solution.slice(0, 2));
-    const id = loadActive(unlimitedKeys('hard').active)!.puzzleId;
+    await tap(first.container, [...solution].reverse()); // wrong: one attempt
+    await screen.findByText(/is not the answer$/);
+    const saved = loadActive(unlimitedKeys('hard').active)!;
+    expect(saved.state.wrongAttempts).toBe(1);
     first.unmount();
+    const afterUnmount = loadActive(unlimitedKeys('hard').active)!;
+    expect(afterUnmount.state).toEqual(saved.state);
 
     const requested = serve({ easy: 4, normal: 4, hard: 4 });
     const again = open();
     await ready(again.container);
-    expect(again.container.querySelectorAll('.tile[data-selected]')).toHaveLength(2);
     expect(requested.some((u) => u.endsWith('/index.json'))).toBe(false); // resumed, not picked
-    expect(requested.filter((u) => u.endsWith('.json'))).toEqual([`/wordpath/unlimited/hard/${id.split('-').at(-1)}.json`]);
+    expect(requested.filter((u) => u.endsWith('.json'))).toEqual([`/wordpath/unlimited/hard/${saved.puzzleId.split('-').at(-1)}.json`]);
+    again.unmount();
+    const after = loadActive(unlimitedKeys('hard').active)!;
+    expect(after.state.wrongAttempts).toBe(1);
+    expect(after.elapsedMs).toBeGreaterThanOrEqual(afterUnmount.elapsedMs); // the clock carries on from the saved time
+  });
+
+  it('keeps the saved session when every fetch fails, then resumes it once the network is back', async () => {
+    const first = open();
+    await ready(first.container);
+    await tap(first.container, solution.slice(0, 3));
+    first.unmount();
+    const before = localStorage.getItem(unlimitedKeys('hard').active);
+    expect(before).not.toBeNull();
+
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('offline'); }));
+    const offline = open();
+    expect(await screen.findByRole('heading', { name: 'No Hard puzzles yet' })).toBeInTheDocument();
+    expect(localStorage.getItem(unlimitedKeys('hard').active)).toBe(before);
+    offline.unmount();
+
+    serve({ easy: 4, normal: 4, hard: 4 });
+    const back = open();
+    await ready(back.container);
+    expect(back.container.querySelectorAll('.tile[data-selected]')).toHaveLength(3);
+    expect(loadActive(unlimitedKeys('hard').active)?.state.route).toEqual(solution.slice(0, 3));
+  });
+
+  it('moves focus to the page heading when the next puzzle loads', async () => {
+    const { container } = open();
+    await ready(container);
+    await tap(container, solution);
+    await userEvent.click(await screen.findByRole('button', { name: /^Next Hard puzzle/ }));
+    await waitFor(() => expect(tilesOf(container)).toHaveLength(49));
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
   });
 
   it('leaving Normal mid-route, playing Hard, then opening Normal again restores the Normal puzzle', async () => {

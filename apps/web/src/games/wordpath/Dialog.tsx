@@ -13,7 +13,7 @@ interface Props {
 
 /**
  * A native modal: the page behind goes inert and Tab stays inside. It closes from its Close button, Escape,
- * or a click on the backdrop; the parent unmounts it then, and focus goes back to whatever opened it.
+ * or a click on the backdrop; the parent unmounts it then, and focus goes back to whatever opened it (or the page heading, if that is gone).
  */
 export function Dialog({ className, labelledBy, onClose, children }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -25,7 +25,9 @@ export function Dialog({ className, labelledBy, onClose, children }: Props) {
     dialog.showModal();
     return () => {
       dialog.close();
-      opener?.focus();
+      // An opener that is gone (the view changed under it) or is only the body leaves focus nowhere: take the screen's heading.
+      if (opener?.isConnected && opener !== document.body) opener.focus();
+      else document.querySelector<HTMLElement>('h1')?.focus();
     };
   }, []);
 

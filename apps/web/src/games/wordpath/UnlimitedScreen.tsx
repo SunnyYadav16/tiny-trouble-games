@@ -1,5 +1,5 @@
 import { wordpathV1 } from '@ttg/engine';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { localDateKey } from '../../shared/daily';
 import { EmptyPlot } from './EmptyPlot';
 import { Header } from './Header';
@@ -43,7 +43,17 @@ export function UnlimitedScreen({ level, now, onBack }: Props) {
     };
   }, [level, keys.active, keys.results]);
 
+  // Next puzzle unmounts the button that was pressed, so once the next one loads the heading takes focus.
+  const refocus = useRef(false);
+  useEffect(() => {
+    if (load !== undefined && refocus.current) {
+      refocus.current = false;
+      document.querySelector<HTMLElement>('h1')?.focus();
+    }
+  }, [load]);
+
   const next = () => {
+    refocus.current = true;
     setFinished(null);
     setLoad(undefined);
     setRound((n) => n + 1);

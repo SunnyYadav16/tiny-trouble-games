@@ -1,6 +1,6 @@
 import { wordpathV1, type Rng } from '@ttg/engine';
 import { loadPuzzle, loadUnlimitedIndex, unlimitedUrl } from './loadPuzzle';
-import { clearActive, unlimitedKeys, type ActiveSession } from './session';
+import type { ActiveSession } from './session';
 
 type Level = wordpathV1.Level;
 
@@ -35,7 +35,7 @@ export async function findPuzzle(level: Level, saved: ActiveSession | null, seen
     const n = Number(new RegExp(`^wp-u-${level}-(\\d+)$`).exec(saved.puzzleId)?.[1]);
     const r = n ? await loadPuzzle(unlimitedUrl(level, n)) : null;
     if (r?.ok) return { puzzle: r.puzzle, solutions: r.solutions, resume: saved, replay: false };
-    clearActive(unlimitedKeys(level).active); // it cannot be continued, so it must not outlive this open
+    // Not cleared: a failed load may be a dropped connection, and the next open retries. A new pick overwrites it on its first save.
   }
 
   const index = await loadUnlimitedIndex();

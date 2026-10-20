@@ -147,4 +147,11 @@ describe('PlayPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'How to play' }));
     expect(screen.getByRole('dialog', { name: 'How to play' })).toBeInTheDocument();
   });
+
+  it('closing the first-visit how to play puts focus on the page heading, not the body', async () => {
+    localStorage.removeItem(SEEN);
+    open(); // the opener is the body here: the screen changed under it
+    await userEvent.click(screen.getByRole('button', { name: 'Got it' }));
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
+  });
 });
