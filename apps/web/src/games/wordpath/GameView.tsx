@@ -66,7 +66,9 @@ export function GameView({ game, clue, length, tile, initial, unlimited, showSho
     initial,
     (start): Model => ({ state: start ?? initialState(), say: '' }),
   );
-  const [confirming, setConfirming] = useState(false);
+  // Give up's inline confirm. Only a dismissed confirm swaps the button back in with motion.
+  const [ask, setAsk] = useState<'never' | 'open' | 'closed'>('never');
+  const confirming = ask === 'open';
   const giveUpRef = useRef<HTMLButtonElement>(null);
   const keepRef = useRef<HTMLButtonElement>(null);
   const resRef = useRef<HTMLDivElement>(null);
@@ -89,23 +91,22 @@ export function GameView({ game, clue, length, tile, initial, unlimited, showSho
     return () => clearTimeout(id);
   }, [state.wrong]);
 
-  // Escape clears the route from anywhere except an open dialog.
+  // Escape dismisses an open Give up confirm, otherwise clears the route; never inside an open dialog.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || (e.target as Element | null)?.closest?.('dialog, [role="dialog"]')) return;
-      dispatch({ type: 'clear' });
+      if (confirming) setAsk('closed');
+      else dispatch({ type: 'clear' });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [confirming]);
 
   // Focus follows the Give up swap: into the safe choice, and back to the button when dismissed.
-  const askedBefore = useRef(false);
   useEffect(() => {
-    if (confirming) keepRef.current?.focus();
-    else if (askedBefore.current) giveUpRef.current?.focus();
-    askedBefore.current = confirming;
-  }, [confirming]);
+    if (ask === 'open') keepRef.current?.focus();
+    if (ask === 'closed') giveUpRef.current?.focus();
+  }, [ask]);
 
   const playing = state.status === 'playing';
   const shown = state.wrong?.route ?? state.route;
@@ -168,19 +169,25 @@ export function GameView({ game, clue, length, tile, initial, unlimited, showSho
                   className="btn primary"
                   aria-describedby={promptId}
                   onClick={() => {
-                    setConfirming(false);
+                    setAsk('closed');
                     dispatch({ type: 'giveUp' });
                     resRef.current?.focus();
                   }}
                 >
                   Yes, show answer
                 </button>
-                <button ref={keepRef} type="button" className="btn" aria-describedby={promptId} onClick={() => setConfirming(false)}>
+                <button ref={keepRef} type="button" className="btn" aria-describedby={promptId} onClick={() => setAsk('closed')}>
                   Keep playing
                 </button>
               </div>
             ) : (
-              <button ref={giveUpRef} type="button" className="btn quiet giveup" onClick={() => setConfirming(true)}>
+              <button
+                ref={giveUpRef}
+                type="button"
+                className="btn quiet giveup"
+                data-returned={ask === 'closed' || undefined}
+                onClick={() => setAsk('open')}
+              >
                 <Icon d={FLAG} />
                 Give up
               </button>

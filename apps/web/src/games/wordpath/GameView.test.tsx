@@ -172,6 +172,26 @@ describe('GameView', () => {
       expect(screen.getByRole('status')).toHaveTextContent('selected, 1 of 5');
     });
 
+    it('Escape while asking dismisses the confirm, keeps the route, and returns to Give up', async () => {
+      const { container, user, tapRoute, onChange } = setup();
+      await tapRoute(game.solution.slice(0, 2));
+      await user.click(screen.getByRole('button', { name: 'Give up' }));
+      const calls = onChange.mock.calls.length;
+      await user.keyboard('{Escape}');
+      expect(screen.queryByText('Give up? Your streak resets.')).toBeNull();
+      expect(screen.getByRole('button', { name: 'Give up' })).toHaveFocus();
+      expect(stones(container)).toEqual([ANSWER[0], ANSWER[1], '', '', '']);
+      expect(onChange.mock.calls.length).toBe(calls);
+    });
+
+    it('Give up swaps back in with motion only after the confirm, never on first render', async () => {
+      const { user } = setup();
+      expect(screen.getByRole('button', { name: 'Give up' })).not.toHaveAttribute('data-returned');
+      await user.click(screen.getByRole('button', { name: 'Give up' }));
+      await user.click(screen.getByRole('button', { name: 'Keep playing' }));
+      expect(screen.getByRole('button', { name: 'Give up' })).toHaveAttribute('data-returned');
+    });
+
     it('unlimited asks a different question', async () => {
       const { user } = setup({ unlimited: true });
       await user.click(screen.getByRole('button', { name: 'Give up' }));

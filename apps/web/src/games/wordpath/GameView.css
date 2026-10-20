@@ -30,14 +30,14 @@
 .btn kbd { font: 600 var(--text-xs)/1 var(--font); }
 .confirm { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 14px 14px; border: 1.5px solid var(--warn); border-radius: var(--radius-xl); }
 .confirm span { grid-column: 1 / -1; font-weight: 600; }
-.confirm, .giveup { animation: swap-in 140ms var(--ease-out) both; }
+.confirm, .giveup[data-returned] { animation: swap-in 140ms var(--ease-out) both; }
 @keyframes swap-in { from { opacity: 0; transform: scale(.97); } }
 .kbdline { margin: auto 0 0; font-size: var(--text-sm); color: var(--ink-2); }
 .kbdline kbd { padding: 3px 5px; }
 .kbdline [aria-hidden] { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
 
 @media (prefers-reduced-motion: reduce) {
-  .stoneb span, .confirm, .giveup { animation: none; }
+  .stoneb span, .confirm, .giveup[data-returned] { animation: none; }
 }
 
 /* phone: the side panel dissolves so its parts and the board stage order as one column.
