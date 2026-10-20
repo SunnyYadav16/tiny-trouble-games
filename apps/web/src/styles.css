@@ -1,0 +1,134 @@
+/* Tokens, base elements, and the play-layout grid. Visual components keep their styles beside them. */
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("./assets/fonts/BricolageGrotesque-latin-variable.woff2") format("woff2");
+  font-weight: 200 800;
+  font-stretch: 75% 100%;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light dark;
+
+  /* page world: gravel stone, yew ink, hedge green */
+  --stone: #DFE1D6; --stone-2: #D4D7CA; --stone-3: #C5C9BA;
+  --ink: #18231C; --ink-2: #46564B;
+  --rule: rgb(24 35 28 / .2); --rule-faint: rgb(24 35 28 / .05);
+  --hedge: #24402E; --hedge-hi: #3A6247; --soil: #19211B;
+  --on-hedge: #EEF1E6; --scrim: rgb(20 28 22 / .46);
+  --good-ink: #2F7A43; --warn: #7A1F2E;
+
+  /* tiles: pinned (spec 7.3), identical in light and dark */
+  --brown: #7A4A2B; --maroon: #7A1F2E; --cream: #FFF3E3;
+  --lantern: #F28C28; --lantern-ink: #2B1400; --leaf: #2F7A43;
+  --brown-side: #4E2D18; --maroon-side: #4C1019; --lantern-side: #A9560F; --leaf-side: #1B4A2B;
+
+  --font: "Bricolage Grotesque", system-ui, sans-serif;
+
+  /* type scale (px steps used by the approved screens) */
+  --text-xs: 12px; --text-sm: 13.5px; --text-base: 15.5px; --text-md: 17px;
+  --text-lg: 21px; --text-xl: 25px; --text-2xl: 32px;
+
+  /* spacing */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 44px;
+
+  /* radii */
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 12px; --radius-xl: 14px; --radius-2xl: 20px; --radius-3xl: 24px;
+
+  /* motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-press: 120ms; --dur-hover: 150ms; --dur-ui: 200ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --stone: #131A15; --stone-2: #1B241E; --stone-3: #263129;
+    --ink: #E4E8DB; --ink-2: #A8B3A6;
+    --rule: rgb(228 232 219 / .2); --rule-faint: rgb(228 232 219 / .035);
+    --hedge: #2A4733; --hedge-hi: #3E6A4C; --soil: #0D120F;
+    --scrim: rgb(0 0 0 / .55);
+    --good-ink: #7CC48F; --warn: #C2566A;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background:
+    linear-gradient(var(--rule-faint) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, var(--rule-faint) 1px, transparent 1px) 0 0 / 32px 32px,
+    var(--stone);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--text-base);
+  font-variation-settings: "wdth" 100;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root { min-height: 100dvh; display: flex; flex-direction: column; }
+
+::selection { background: var(--lantern); color: var(--lantern-ink); }
+
+:focus-visible { outline: 3px solid var(--lantern); outline-offset: 2px; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+/* buttons */
+.iconbtn {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  border-radius: var(--radius-lg); border: 0; background: transparent; color: var(--ink); cursor: pointer;
+  transition: background-color var(--dur-hover) ease;
+}
+.iconbtn svg, .btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+.btn {
+  height: 46px; padding: 0 var(--space-4); border-radius: var(--radius-lg);
+  border: 1.5px solid var(--ink); background: transparent; color: var(--ink);
+  font: 600 var(--text-base)/1 var(--font); display: inline-flex; gap: var(--space-2); align-items: center; cursor: pointer;
+  transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-hover) ease;
+}
+.btn:active { transform: scale(0.97); }
+.btn.primary { background: var(--hedge); border-color: var(--hedge); color: var(--on-hedge); }
+.btn.quiet { border-color: var(--rule); }
+.btn.big { height: 54px; padding: 0 22px; font-size: var(--text-md); border-radius: var(--radius-xl); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn:disabled:active { transform: none; }
+.btns { display: flex; gap: 10px; flex-wrap: wrap; }
+
+@media (hover: hover) {
+  .iconbtn:hover { background: var(--stone-2); }
+  .btn:not(:disabled):hover { background: var(--stone-2); }
+  .btn.primary:not(:disabled):hover { background: var(--hedge-hi); border-color: var(--hedge-hi); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:active { transform: none; background: var(--stone-2); }
+  .btn.primary:active { background: var(--hedge-hi); }
+}
+
+kbd {
+  font: 600 var(--text-xs)/1 var(--font); padding: 3px 6px; border-radius: var(--radius-sm);
+  border: 1px solid var(--rule); background: var(--stone-2); color: var(--ink-2);
+}
+
+/* play layout: one column below 900px; side panel (clue, stones, result, controls) beside the board above */
+.play { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; padding: var(--space-4) var(--space-4) 0; gap: var(--space-4); }
+.side { display: flex; flex-direction: column; gap: var(--space-4); }
+.stage { display: grid; place-items: center; position: relative; min-width: 0; }
+
+@media (min-width: 900px) {
+  .play { grid-template-columns: 470px minmax(0, 1fr); align-content: stretch; padding: 0; gap: 0; }
+  .side { padding: var(--space-7) var(--space-6) var(--space-6) var(--space-7); gap: 26px; border-right: 1px solid var(--rule); }
+}
+
+/* home: one centred page holding the game card */
+.page { width: 100%; max-width: 960px; margin: 0 auto; padding: var(--space-6) var(--space-4); }
