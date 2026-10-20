@@ -86,7 +86,7 @@ PRODUCT.md, DESIGN.md     impeccable product context and design system (DESIGN.m
 
 ### AI content
 - Only `tools/content` calls AI or depends on an AI SDK (`@google/genai`, `@anthropic-ai/sdk`).
-- `OPENROUTER_API_KEY`, `GEMINI_API_KEY`, and `ANTHROPIC_API_KEY` come from the environment only. Never write them to a file, a log, or a commit.
+- `OPENROUTER_API_KEY`, `GEMINI_API_KEY`, and `ANTHROPIC_API_KEY` come from the environment, or from the git-ignored root `.env` that `pnpm content` loads. Code never writes them to a file, a log, or a commit.
 - Proposer and reviewer are different models. Nothing is published unless every stage passes: deterministic gates; the reviewer finds every fact in the clue true and the clue not offensive (no source page, N26); the reviewer solves the clue blind with the answer as its first guess; the built puzzle verifies and replays at every size.
 - Tests never call a real model or the network. AI sits behind the `Llm` interface with a fake.
 - Read the `claude-api` skill for current model IDs and tool names before changing `anthropic.ts`; fetch current Gemini or OpenRouter API docs (Context7) before changing `gemini.ts` or `openrouter.ts`.

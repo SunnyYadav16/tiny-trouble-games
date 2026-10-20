@@ -8,7 +8,7 @@
   },
   "scripts": {
     "wordlists": "pnpm --filter @ttg/wordlists run",
-    "content": "tsx tools/content/src/cli.ts",
+    "content": "tsx --env-file-if-exists=.env tools/content/src/cli.ts",
     "verify": "tsx tools/generator/src/verify.ts",
     "bench": "tsx tools/generator/src/bench.ts",
     "dev": "pnpm --filter @ttg/web dev",
