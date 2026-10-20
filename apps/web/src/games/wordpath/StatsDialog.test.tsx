@@ -42,7 +42,7 @@ describe('StatsDialog', () => {
     render(<StatsDialog {...stats} onClose={() => {}} />);
     const daily = screen.getByRole('region', { name: 'Daily' });
     const rows = within(daily).getAllByRole('listitem').map((li) => li.textContent);
-    expect(rows).toEqual(['under 0:301', '0:30–1:000', '1:00–2:001', '2:00–5:000', '5:00+0']);
+    expect(rows).toEqual(['under 0:30:1 puzzle', '0:30–1:00:0 puzzles', '1:00–2:00:1 puzzle', '2:00–5:00:0 puzzles', '5:00+:0 puzzles']);
   });
 
   it('lists one row per level in Unlimited, with solved count and average time', () => {
@@ -81,6 +81,21 @@ describe('StatsDialog', () => {
     expect(onClose).toHaveBeenCalledTimes(2);
     await userEvent.click(dialog);
     expect(onClose).toHaveBeenCalledTimes(3);
+  });
+
+  it('stays open for a click in the panel padding, or a drag that ends on the backdrop', () => {
+    const onClose = vi.fn<() => void>();
+    const { container } = render(<StatsDialog {...stats} onClose={onClose} />);
+    const dialog = screen.getByRole('dialog', { name: 'Stats' });
+    const panel = container.querySelector<HTMLElement>('.panel')!;
+    fireEvent.click(panel);
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.mouseDown(panel); // press in the content, release on the backdrop
+    fireEvent.click(dialog);
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.mouseDown(dialog);
+    fireEvent.click(dialog);
+    expect(onClose).toHaveBeenCalledOnce();
   });
 
   it('returns focus to the control that opened it', async () => {

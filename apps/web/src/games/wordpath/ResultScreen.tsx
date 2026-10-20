@@ -55,7 +55,10 @@ export function ResultScreen({ mode, result, clue, answer, onUnlimited, onNext, 
       <h2 ref={heading} className="res-h" data-good={solved || undefined} tabIndex={-1}>
         {solved ? 'Solved' : 'Gave up'}
       </h2>
-      <Stones text={answer} length={answer.length} kind={solved ? 'solved' : 'revealed'} okLabel="" />
+      <p className="visually-hidden">The answer is {answer}.</p>
+      <div aria-hidden="true">
+        <Stones text={answer} length={answer.length} kind={solved ? 'solved' : 'revealed'} okLabel="" />
+      </div>
       <p className="res-clue">{clue}</p>
       <dl className="ledger">
         <div>

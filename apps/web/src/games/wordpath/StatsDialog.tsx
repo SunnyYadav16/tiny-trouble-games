@@ -28,9 +28,15 @@ const Distribution = ({ summary }: { summary: Summary }) => {
     <ul className="dist" aria-label="Solve times">
       {summary.distribution.map(({ label, count }) => (
         <li key={label}>
-          <span>{label}</span>
+          <span>
+            {label}
+            <span className="visually-hidden">:</span>
+          </span>
           <span className="b" aria-hidden="true" style={{ width: count ? `${Math.max(4, (count / most) * 100)}%` : 0 }} />
-          <span className="n">{count}</span>
+          <span className="n">
+            {count}
+            <span className="visually-hidden"> {count === 1 ? 'puzzle' : 'puzzles'}</span>
+          </span>
         </li>
       ))}
     </ul>
@@ -41,6 +47,7 @@ const Distribution = ({ summary }: { summary: Summary }) => {
 export function StatsDialog({ daily, unlimited, byLevel, onClose }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const pressedOnBackdrop = useRef(false);
 
   // Native modal: the page behind goes inert and Tab stays inside. Focus goes back to whatever opened it.
   useEffect(() => {
@@ -64,65 +71,69 @@ export function StatsDialog({ daily, unlimited, byLevel, onClose }: Props) {
         e.preventDefault(); // Escape: closing is the parent's call, which unmounts this
         onClose();
       }}
-      onClick={(e) => e.target === e.currentTarget && onClose()} // the backdrop
+      // Only the backdrop is the <dialog> itself (the panel inside fills it). A drag that began in the content and ended on the backdrop is not a backdrop click.
+      onMouseDown={(e) => (pressedOnBackdrop.current = e.target === e.currentTarget)}
+      onClick={(e) => e.target === e.currentTarget && pressedOnBackdrop.current && onClose()}
     >
-      <button type="button" className="iconbtn x" aria-label="Close" onClick={onClose}>
-        <Icon d={CLEAR} />
-      </button>
-      <h2 id={titleId}>Stats</h2>
-      <div className="statcols">
-        <section aria-labelledby={`${titleId}-daily`}>
-          <h3 id={`${titleId}-daily`}>Daily</h3>
-          <Rows
-            rows={[
-              ['Played', daily.played],
-              ['Solved', daily.solved],
-              ['Solve rate', percent(daily.solveRate)],
-              ['Current streak', daily.current],
-              ['Best streak', daily.best],
-              ['Average time', time(daily)],
-            ]}
-          />
-          <Distribution summary={daily} />
-        </section>
-        <section aria-labelledby={`${titleId}-unlimited`}>
-          <h3 id={`${titleId}-unlimited`}>Unlimited</h3>
-          <Rows
-            rows={[
-              ['Played', unlimited.played],
-              ['Solved', unlimited.solved],
-              ['Solve rate', percent(unlimited.solveRate)],
-              ['Average time', time(unlimited)],
-            ]}
-          />
-          <table className="lvl-stats">
-            <thead>
-              <tr>
-                <th scope="col">Level</th>
-                <th scope="col">Solved</th>
-                <th scope="col">Avg</th>
-              </tr>
-            </thead>
-            <tbody>
-              {wordpathV1.LEVELS.map((level) => (
-                <tr key={level}>
-                  <th scope="row">
-                    <LevelIcon level={level} />
-                    {level[0]!.toUpperCase() + level.slice(1)}
-                  </th>
-                  <td>{byLevel[level].solved}</td>
-                  <td>{time(byLevel[level])}</td>
+      <div className="panel">
+        <button type="button" className="iconbtn x" aria-label="Close" onClick={onClose}>
+          <Icon d={CLEAR} />
+        </button>
+        <h2 id={titleId}>Stats</h2>
+        <div className="statcols">
+          <section aria-labelledby={`${titleId}-daily`}>
+            <h3 id={`${titleId}-daily`}>Daily</h3>
+            <Rows
+              rows={[
+                ['Played', daily.played],
+                ['Solved', daily.solved],
+                ['Solve rate', percent(daily.solveRate)],
+                ['Current streak', daily.current],
+                ['Best streak', daily.best],
+                ['Average time', time(daily)],
+              ]}
+            />
+            <Distribution summary={daily} />
+          </section>
+          <section aria-labelledby={`${titleId}-unlimited`}>
+            <h3 id={`${titleId}-unlimited`}>Unlimited</h3>
+            <Rows
+              rows={[
+                ['Played', unlimited.played],
+                ['Solved', unlimited.solved],
+                ['Solve rate', percent(unlimited.solveRate)],
+                ['Average time', time(unlimited)],
+              ]}
+            />
+            <table className="lvl-stats">
+              <thead>
+                <tr>
+                  <th scope="col">Level</th>
+                  <th scope="col">Solved</th>
+                  <th scope="col">Avg</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <Distribution summary={unlimited} />
-        </section>
+              </thead>
+              <tbody>
+                {wordpathV1.LEVELS.map((level) => (
+                  <tr key={level}>
+                    <th scope="row">
+                      <LevelIcon level={level} />
+                      {level[0]!.toUpperCase() + level.slice(1)}
+                    </th>
+                    <td>{byLevel[level].solved}</td>
+                    <td>{time(byLevel[level])}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Distribution summary={unlimited} />
+          </section>
+        </div>
+        <p className="store-note">
+          <Icon d={INFO} />
+          <span>Saved in this browser only. Clearing your browser data, or using a private window, starts your stats fresh.</span>
+        </p>
       </div>
-      <p className="store-note">
-        <Icon d={INFO} />
-        <span>Saved in this browser only. Clearing your browser data, or using a private window, starts your stats fresh.</span>
-      </p>
     </dialog>
   );
 }

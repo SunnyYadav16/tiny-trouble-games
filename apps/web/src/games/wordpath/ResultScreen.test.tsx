@@ -27,6 +27,12 @@ describe('ResultScreen (daily)', () => {
     expect(container.textContent).not.toMatch(/hint|score|share/i);
   });
 
+  it('reads the answer as one sentence and hides the letter stones from assistive tech', () => {
+    const { container } = setup();
+    expect(screen.getByText('The answer is MANGO.')).toHaveClass('visually-hidden');
+    expect(container.querySelector('.stones')!.closest('[aria-hidden="true"]')).not.toBeNull();
+  });
+
   it('a gave-up result shows the revealed answer and says the streak is back to 0', () => {
     const { container } = setup({ result: gaveUp });
     expect(screen.getByRole('heading', { name: 'Gave up' })).toBeInTheDocument();
