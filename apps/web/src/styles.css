@@ -19,6 +19,7 @@
   --hedge: #24402E; --hedge-hi: #3A6247; --soil: #19211B;
   --on-hedge: #EEF1E6; --scrim: rgb(20 28 22 / .46);
   --good-ink: #2F7A43; --warn: #7A1F2E;
+  --focus: var(--ink); /* 3:1 or better on stone (lantern is ~1.8:1 in light) */
 
   /* tiles: pinned (spec 7.3), identical in light and dark */
   --brown: #7A4A2B; --maroon: #7A1F2E; --cream: #FFF3E3;
@@ -52,6 +53,7 @@
     --hedge: #2A4733; --hedge-hi: #3E6A4C; --soil: #0D120F;
     --scrim: rgb(0 0 0 / .55);
     --good-ink: #7CC48F; --warn: #C2566A;
+    --focus: var(--lantern);
   }
 }
 
@@ -75,7 +77,7 @@ body {
 
 ::selection { background: var(--lantern); color: var(--lantern-ink); }
 
-:focus-visible { outline: 3px solid var(--lantern); outline-offset: 2px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
 .visually-hidden {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;

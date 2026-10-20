@@ -1,0 +1,85 @@
+/* Board: a clipped-hedge band around a soil plot of raised clay pavers (N15). Tile colors never change in dark mode. */
+
+.hedge {
+  --band: 10px;
+  position: relative;
+  padding: var(--band);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 30% 35%, rgb(255 255 255 / .07) 1.4px, transparent 2px) 0 0 / 7px 7px,
+    radial-gradient(circle at 65% 70%, rgb(0 0 0 / .22) 1.6px, transparent 2.2px) 0 0 / 9px 9px,
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / .04) 2px, transparent 3px) 0 0 / 13px 13px,
+    var(--hedge);
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / .06), inset 0 -3px 0 rgb(0 0 0 / .25),
+    0 18px 40px -18px rgb(10 20 12 / .55), 0 2px 6px rgb(10 20 12 / .2);
+}
+@media (min-width: 900px) {
+  .hedge { --band: 18px; border-radius: var(--radius-3xl); }
+}
+
+.board { width: max-content; }
+.plot { position: relative; display: grid; background: var(--soil); border-radius: var(--radius-md); box-shadow: inset 0 2px 6px rgb(0 0 0 / .5); }
+.row { display: flex; }
+
+/* route line: under the pavers, so it reads as bridges between them */
+.route { position: absolute; inset: 0; pointer-events: none; overflow: visible; opacity: .95; }
+.route polyline, .route line { fill: none; stroke: var(--lantern); stroke-linecap: round; stroke-linejoin: round; }
+.board[data-state="solved"] .route * { stroke: var(--leaf); }
+.board[data-state="revealed"] .route * { stroke: var(--cream); }
+
+.tile {
+  --d: calc(var(--t) * .095); /* paver depth: the side wall */
+  --face: var(--brown); --side: var(--brown-side);
+  position: relative; z-index: 1;
+  width: var(--t); height: var(--t); display: grid; place-items: center;
+  padding: 0; border: 0; background: none; color: var(--cream); font: inherit;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.tile[data-parity="1"] { --face: var(--maroon); --side: var(--maroon-side); }
+.tile[aria-disabled="true"] { cursor: default; }
+
+/* 3D clay paver: domed face (light from the top left) on a solid side wall cast by an offset shadow */
+.paver {
+  width: 84%; height: 84%; border-radius: 50%; display: grid; place-items: center;
+  font-size: calc(var(--t) * .39); font-weight: 650; font-variation-settings: "wdth" 88, "opsz" 24; line-height: 1;
+  text-shadow: 0 1px 0 rgb(0 0 0 / .4);
+  background: radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--face) 74%, white) 0, var(--face) 48%, color-mix(in srgb, var(--face) 80%, black) 100%);
+  box-shadow: 0 var(--d) 0 var(--side), 0 calc(var(--d) + 1px) 0 rgb(0 0 0 / .3), 0 calc(var(--d) + 3px) 6px rgb(0 0 0 / .5), inset 0 1.5px 0 rgb(255 255 255 / .22);
+  transform: translateY(calc(var(--d) * -.6));
+  transition: transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out), opacity var(--dur-ui) ease;
+}
+
+/* selected: lantern orange, pressed into the soil (side wall down to 30%) */
+.board[data-state="active"] .tile[data-selected] { --face: var(--lantern); --side: var(--lantern-side); color: var(--lantern-ink); }
+.board[data-state="active"] .tile[data-selected] .paver {
+  text-shadow: 0 1px 0 rgb(255 255 255 / .35);
+  outline: 2px solid var(--cream); outline-offset: 1px;
+  transform: translateY(calc(var(--d) * -.05));
+  box-shadow: 0 calc(var(--d) * .3) 0 var(--side), 0 calc(var(--d) * .3 + 2px) 3px rgb(0 0 0 / .5), inset 0 1.5px 0 rgb(255 255 255 / .3);
+}
+.board[data-state="wrong"] .tile[data-selected] .paver { outline: 2px dashed var(--cream); outline-offset: 2px; filter: saturate(.75); }
+.board[data-state="solved"] .tile[data-selected] { --face: var(--leaf); --side: var(--leaf-side); }
+.board:is([data-state="solved"], [data-state="revealed"]) .tile[data-selected] .paver { outline: 2px solid var(--cream); outline-offset: 1px; }
+/* finished board: the route stands out, the rest steps back */
+.board:is([data-state="solved"], [data-state="revealed"]) .tile:not([data-selected]) .paver { opacity: .55; }
+
+@media (hover: hover) {
+  .tile:not([data-selected]):not([aria-disabled="true"]):hover .paver { transform: translateY(calc(var(--d) * -1)); }
+}
+
+/* keyboard focus: a cream ring around the whole tile, readable on dark soil */
+.tile:focus-visible { outline: none; }
+.tile:focus-visible::after {
+  content: ""; position: absolute; inset: 1px; border-radius: var(--radius-md);
+  outline: 2px solid var(--cream); outline-offset: -1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paver { transition: opacity var(--dur-ui) ease; }
+}
+
+/* solve celebration (N17): decorative, clipped to the board frame, removed when done */
+.petals { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; z-index: 4; }
+.petal { position: absolute; left: 0; top: 0; }
+.petal i { display: block; }
+.petal svg { display: block; overflow: visible; }
