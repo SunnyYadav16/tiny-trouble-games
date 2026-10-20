@@ -1,0 +1,28 @@
+/* A native modal <dialog>: it opens in the top layer over a dimmed backdrop, centered (not anchored to its trigger). */
+
+.dialog {
+  width: min(680px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; position: relative;
+  margin: auto; padding: 0; border: 1px solid var(--rule); border-radius: var(--radius-2xl);
+  background: var(--stone); color: var(--ink);
+  box-shadow: 0 30px 80px -20px rgb(0 0 0 / .5), 0 2px 8px rgb(0 0 0 / .2);
+  transition: opacity var(--dur-ui) var(--ease-out), transform var(--dur-ui) var(--ease-out);
+}
+.dialog .panel { padding: 22px 20px; }
+.dialog::backdrop { background: var(--scrim); transition: opacity var(--dur-ui) var(--ease-out); }
+/* open: scale 0.96 to 1 and fade in */
+@starting-style {
+  .dialog[open] { opacity: 0; transform: scale(.96); }
+  .dialog[open]::backdrop { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  @starting-style { .dialog[open] { transform: none; } }
+}
+
+.dialog h2 { margin: 0 0 10px; padding-right: 48px; font-size: 26px; font-weight: 750; font-variation-settings: "wdth" 82; letter-spacing: -.015em; }
+.dialog .x { position: absolute; top: 10px; right: 10px; }
+
+@media (min-width: 700px) {
+  .dialog .panel { padding: 30px 32px; }
+  .dialog h2 { margin-bottom: 18px; font-size: 30px; }
+  .dialog .x { top: 16px; right: 16px; }
+}
