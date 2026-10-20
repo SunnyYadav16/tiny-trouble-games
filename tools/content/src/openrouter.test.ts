@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { LlmAuthError, LlmQuotaError } from './llm';
+import { LlmAuthError, LlmQuotaError, LlmUnavailableError } from './llm';
 import { createOpenRouterLlm, OPENROUTER_PROPOSER_MODEL, OPENROUTER_REVIEWER_MODEL, retryWait } from './openrouter';
 import { chooseProvider } from './provider';
 
@@ -26,7 +26,7 @@ const solveRequest = { clue: candidate.clue, length: 5, letters: 'AGMNO' };
 describe('openrouter', () => {
   it('defaults to the free proposer and reviewer models (N27)', () => {
     expect(OPENROUTER_PROPOSER_MODEL).toBe('minimax/minimax-m3.1-flash:free');
-    expect(OPENROUTER_REVIEWER_MODEL).toBe('google/gemma-4-31b-it:free');
+    expect(OPENROUTER_REVIEWER_MODEL).toBe('nvidia/nemotron-3-super-120b-a12b:free');
   });
 
   it('uses two different models and throws, before any request, when they match', () => {
@@ -156,17 +156,61 @@ describe('openrouter', () => {
     }
   });
 
-  it('retries 429 and 5xx up to 3 tries, honoring Retry-After, then throws', async () => {
-    const wait = { 'Retry-After': '0' };
-    const limited = stub(respond({ error: { code: 429, message: 'Rate limit exceeded' } }, 429, wait), respond(completion('{"guesses": ["MANGO"]}')));
-    expect(await createOpenRouterLlm(KEY, undefined, limited).solve(solveRequest)).toEqual(['MANGO']);
-    expect(limited).toHaveBeenCalledTimes(2);
+  const busy = (status = 429, message = 'Provider returned error', headers?: Record<string, string>) => respond({ error: { code: status, message } }, status, headers);
+  const ok = () => respond(completion('{"guesses": ["MANGO"]}'));
+  const waiting = (f: ReturnType<typeof stub>) => {
+    const waits = vi.fn<(ms: number) => Promise<void>>(async () => {});
+    return { waits, llm: createOpenRouterLlm(KEY, undefined, f, waits) };
+  };
 
-    const down = stub(...Array.from({ length: 3 }, () => respond({ error: { code: 503, message: 'No provider available' } }, 503, wait)));
-    const failed = createOpenRouterLlm(KEY, undefined, down).solve(solveRequest);
-    await expect(failed).rejects.toThrow(/503.*No provider available/);
-    await expect(failed).rejects.not.toBeInstanceOf(LlmAuthError);
-    expect(down).toHaveBeenCalledTimes(3);
+  it('waits and retries a provider 429, then succeeds', async () => {
+    const f = stub(busy(), ok());
+    const { waits, llm } = waiting(f);
+    expect(await llm.solve(solveRequest)).toEqual(['MANGO']);
+    expect(f).toHaveBeenCalledTimes(2);
+    expect(waits.mock.calls).toEqual([[5000]]);
+  });
+
+  it('stops the run after four busy 429s, waiting 5, 15, then 30 seconds, with no key in the message', async () => {
+    const f = stub(busy(), busy(), busy(), busy(), ok());
+    const { waits, llm } = waiting(f);
+    const failed = llm.review({ candidate });
+    await expect(failed).rejects.toBeInstanceOf(LlmUnavailableError);
+    await expect(failed).rejects.toBeInstanceOf(LlmAuthError);
+    await expect(failed).rejects.toThrow(
+      `${OPENROUTER_REVIEWER_MODEL} is busy or down at its provider (HTTP 429: Provider returned error); stopped to save your free requests — try again later or set OPENROUTER_REVIEWER_MODEL / OPENROUTER_PROPOSER_MODEL`,
+    );
+    await expect(failed).rejects.not.toThrow(KEY);
+    expect(f).toHaveBeenCalledTimes(4);
+    expect(waits.mock.calls).toEqual([[5000], [15000], [30000]]);
+  });
+
+  it('stops the run after four 503s', async () => {
+    const f = stub(busy(503, 'No provider available'), busy(503, 'No provider available'), busy(503, 'No provider available'), busy(503, 'No provider available'), ok());
+    const failed = waiting(f).llm.solve(solveRequest);
+    await expect(failed).rejects.toBeInstanceOf(LlmUnavailableError);
+    await expect(failed).rejects.toThrow(/busy or down at its provider \(HTTP 503: No provider available\)/);
+    expect(f).toHaveBeenCalledTimes(4);
+  });
+
+  it('honors a numeric Retry-After of 60 seconds or less, and falls back to the schedule otherwise', async () => {
+    const f = stub(busy(429, 'x', { 'Retry-After': '7' }), busy(503, 'x', { 'Retry-After': 'Wed, 21 Oct 2026 07:28:00 GMT' }), busy(503, 'x', { 'Retry-After': '120' }), ok());
+    const { waits, llm } = waiting(f);
+    await llm.solve(solveRequest);
+    expect(waits.mock.calls).toEqual([[7000], [15000], [30000]]);
+  });
+
+  it('treats a timeout or network error like a busy provider: wait, retry, then stop the run', async () => {
+    const f = vi.fn<typeof fetch>().mockRejectedValueOnce(new TypeError('fetch failed')).mockResolvedValueOnce(ok());
+    const { waits, llm } = waiting(f);
+    expect(await llm.solve(solveRequest)).toEqual(['MANGO']);
+    expect(waits.mock.calls).toEqual([[5000]]);
+
+    const down = vi.fn<typeof fetch>().mockRejectedValue(new DOMException('The operation timed out', 'TimeoutError'));
+    const failed = waiting(down).llm.solve(solveRequest);
+    await expect(failed).rejects.toBeInstanceOf(LlmUnavailableError);
+    await expect(failed).rejects.toThrow(/busy or down at its provider \(.*timed out\)/);
+    expect(down).toHaveBeenCalledTimes(4);
   });
 
   it('stops at once on a daily free-model 429 (message names the day, or Retry-After is over a minute)', async () => {
@@ -174,7 +218,7 @@ describe('openrouter', () => {
     const cases = [respond(day, 429), respond({ error: { code: 429, message: 'Rate limit exceeded' } }, 429, { 'Retry-After': '3600' })];
     for (const reply of cases) {
       const f = stub(reply, respond(completion('{"guesses": ["MANGO"]}')));
-      const quota = createOpenRouterLlm(KEY, undefined, f).solve(solveRequest);
+      const quota = createOpenRouterLlm(KEY, undefined, f, async () => {}).solve(solveRequest);
       await expect(quota).rejects.toBeInstanceOf(LlmQuotaError);
       await expect(quota).rejects.toBeInstanceOf(LlmAuthError);
       await expect(quota).rejects.toThrow(/free daily limit reached/);
@@ -201,9 +245,9 @@ describe('openrouter', () => {
     expect(f).toHaveBeenCalledTimes(2);
   });
 
-  it('waits Retry-After seconds when it is a number, else 1 s then 2 s, and never over 60 s', () => {
-    expect([retryWait('0', 1), retryWait('5', 2), retryWait('600', 1)]).toEqual([0, 5, 60]);
-    expect([retryWait(null, 1), retryWait('', 1), retryWait(' ', 2), retryWait('-3', 1), retryWait('Wed, 21 Oct 2026 07:28:00 GMT', 2)]).toEqual([1, 1, 2, 1, 2]);
+  it('waits Retry-After seconds when it is a number of at most 60, else 5, 15, then 30 s', () => {
+    expect([retryWait('0', 1), retryWait('5', 2), retryWait('60', 1), retryWait('600', 1)]).toEqual([0, 5, 60, 5]);
+    expect([retryWait(null, 1), retryWait('', 2), retryWait(' ', 3), retryWait('-3', 1), retryWait('Wed, 21 Oct 2026 07:28:00 GMT', 2)]).toEqual([5, 15, 30, 5, 15]);
   });
 
   it('sums the reported cost per stage, failed replies included', async () => {

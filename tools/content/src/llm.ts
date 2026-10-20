@@ -49,3 +49,6 @@ export class LlmAuthError extends Error {}
 
 /** The provider's free daily request limit is used up: every later call fails until it resets, so refill stops (and keeps what it saved) the same way as for a refused key. */
 export class LlmQuotaError extends LlmAuthError {}
+
+/** The provider stayed busy, down, or silent through every retry: stop the run (and keep what it saved) rather than fail the try and spend another request on a new candidate. */
+export class LlmUnavailableError extends LlmAuthError {}

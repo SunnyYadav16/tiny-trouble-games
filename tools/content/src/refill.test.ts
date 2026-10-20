@@ -6,7 +6,7 @@ import { wordpathV1 } from '@ttg/engine';
 import { buildPuzzle } from '@ttg/generator/build';
 import type { Candidate } from '@ttg/generator/gates';
 import { loadStore, saveDaily, saveUnlimited, usedAnswers } from '@ttg/generator/io';
-import { LlmAuthError, LlmQuotaError, type Llm, type Review } from './llm';
+import { LlmAuthError, LlmQuotaError, LlmUnavailableError, type Llm, type Review } from './llm';
 import { addDays, refill } from './refill';
 
 type Level = wordpathV1.Level;
@@ -233,6 +233,17 @@ describe('refill', () => {
     expect(report).toMatchObject({ created: [`wp-${TODAY}`], failed: [], aborted: expect.stringMatching(/daily limit/) });
     expect(f.llm.propose).toHaveBeenCalledTimes(2);
     expect(loadStore(dir).dailies).toHaveLength(29);
+  });
+
+  it('stops the run, proposing nothing more, when the reviewer stays busy', async () => {
+    seed({ skip: [0, 1], counts: { easy: 39, normal: 39, hard: 39 } });
+    const f = fakes();
+    f.llm.review.mockRejectedValueOnce(new LlmUnavailableError('reviewer is busy or down at its provider (HTTP 429: Provider returned error)'));
+    const report = await f.run();
+    expect(report).toMatchObject({ created: [], failed: [], aborted: expect.stringMatching(/busy or down/) });
+    expect(report.rejections.review).toBe(0);
+    expect(f.llm.propose).toHaveBeenCalledTimes(1);
+    expect(loadStore(dir).dailies).toHaveLength(28);
   });
 
   it('stops after --limit new puzzles are saved, dailies first, failed slots not counted', async () => {
