@@ -31,7 +31,7 @@ console.log(`provider ${provider.name}: proposer ${provider.proposer}, reviewer 
 
 const today = new Date().toLocaleDateString('en-CA'); // local YYYY-MM-DD
 const { lists, version } = loadLists();
-const report = await refill({ llm, today, lists, version, limit });
+const report = await refill({ llm, today, lists, version, limit, log: console.log });
 
 for (const id of report.created) console.log(`created ${id}`);
 for (const { id, reasons } of report.failed) console.log(`failed ${id}\n  ${reasons.join('\n  ')}`);

@@ -4,7 +4,7 @@ import { parseCandidate, parseGuesses, parseReview, PROPOSE_SYSTEM, proposePromp
 
 /**
  * N27, from openrouter.ai/api/v1/models (read 2026-10-19): free (`:free`) models from two labs, both listing
- * response_format, reasoning, and max_tokens (Gemma's cap, 32,768, fits our 16,000). Free keys get 50 requests a day.
+ * response_format, reasoning, and max_tokens (Gemma's cap, 32,768, is far above ours). Free keys get 50 requests a day.
  */
 export const OPENROUTER_PROPOSER_MODEL = 'minimax/minimax-m3.1-flash:free';
 export const OPENROUTER_REVIEWER_MODEL = 'google/gemma-4-31b-it:free';
@@ -12,6 +12,7 @@ export const OPENROUTER_REVIEWER_MODEL = 'google/gemma-4-31b-it:free';
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 const TIMEOUT_MS = 120_000;
 const TRIES = 3;
+const MAX_TOKENS = 2_000;
 
 interface OpenRouterError {
   message?: string;
@@ -62,10 +63,11 @@ export function createOpenRouterLlm(
 
   /** One completion's text, as a JSON object. Retries 408, 429, and 5xx; a refused key, no credits, the free daily limit, or no provider for the request stops the run. */
   async function ask(stage: keyof Spent, model: string, messages: { role: 'system' | 'user'; content: string }[]): Promise<string> {
-    // Effort and output cap mirror the other backends and bound the cost of one call. The free endpoints lack structured_outputs
+    // Every reply is a short JSON object, so low reasoning effort and a 2,000-token cap keep a call from spending its time on long hidden
+    // thinking (on shared free capacity that made a refill crawl). A reply cut off at the cap fails its try with a message saying so. The free endpoints lack structured_outputs
     // (a json_schema request finds no endpoint and 404s), so ask for JSON mode, which they support; the prompts state each reply's shape and the shared guards reject a wrong one.
     // require_parameters routes only to providers that honor response_format.
-    const body = JSON.stringify({ model, messages, max_tokens: 16_000, reasoning: { effort: 'medium' }, provider: { require_parameters: true }, response_format: { type: 'json_object' } });
+    const body = JSON.stringify({ model, messages, max_tokens: MAX_TOKENS, reasoning: { effort: 'low' }, provider: { require_parameters: true }, response_format: { type: 'json_object' } });
     for (let attempt = 1; ; attempt++) {
       const res = await fetchFn(ENDPOINT, { method: 'POST', headers, body, signal: AbortSignal.timeout(TIMEOUT_MS) });
       if (res.ok) {
@@ -75,6 +77,7 @@ export function createOpenRouterLlm(
         if (data.error) throw new Error(`${model} error: ${data.error.message}`);
         const choice = data.choices?.[0];
         if (!choice) throw new Error(`${model} returned no choices`);
+        if (choice.finish_reason === 'length') throw new Error(`${model} stopped: length (output cap of ${MAX_TOKENS} tokens reached)`);
         if (choice.finish_reason !== 'stop') throw new Error(`${model} stopped: ${choice.finish_reason}${choice.error ? `: ${choice.error.message}` : ''}`);
         const text = choice.message?.content;
         if (typeof text !== 'string' || !text) throw new Error(`${model} returned no text`);

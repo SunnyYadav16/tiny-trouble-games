@@ -29,6 +29,8 @@ export interface RefillOptions {
   maxTries?: number;
   /** Stop once this many new puzzles are saved in this run (a cheap trial). */
   limit?: number;
+  /** Called once per try as it finishes, with the seconds each stage took. */
+  log?: (line: string) => void;
 }
 
 interface Slot {
@@ -95,7 +97,7 @@ const normalize = (c: Candidate): Candidate => ({
 async function fillSlot(
   slot: Slot,
   used: ReadonlySet<string>,
-  { llm, lists, version, maxTries = 6 }: RefillOptions,
+  { llm, lists, version, maxTries = 6, log }: RefillOptions,
   report: RefillReport,
 ): Promise<{ puzzle: wordpathV1.PuzzleBody; answer: string } | null> {
   const rejected: { answer: string; reason: string }[] = [];
@@ -103,9 +105,18 @@ async function fillSlot(
   for (let i = 0; i < maxTries; i++) {
     let stage: Stage = 'propose';
     let c: Candidate | undefined;
+    // Wall-clock seconds per finished stage, for the progress line.
+    const timings: string[] = [];
+    let t = performance.now();
+    const lap = () => {
+      timings.push(`${stage} ${((performance.now() - t) / 1000).toFixed(1)}s`);
+      t = performance.now();
+    };
+    const progress = (outcome: string) => log?.(`${slot.id} try ${i + 1}: ${[...timings, outcome].join(' → ')}`);
     try {
       c = normalize(await llm.propose({ topic: topicFor(slot.id), level: slot.level, avoid: [...used], rejected: [...rejected] }));
 
+      lap();
       stage = 'gates';
       const problems = candidateProblems(c, { lists, used });
       if (problems.length > 0) throw new Error(problems.join('; '));
@@ -118,18 +129,27 @@ async function fillSlot(
       if (review.plainDefinition && slot.level !== 'easy') issues.push('clue is a plain definition');
       if (issues.length > 0) throw new Error(`${issues.join(', ')}: ${review.reason}`);
 
+      lap();
       stage = 'solve';
       const letters = [...new Set(c.answer)].sort().join('');
       const [guess] = await llm.solve({ clue: c.clue, length: c.answer.length, letters });
       if (guess !== c.answer) throw new Error(guess ? `reviewer solved it as ${guess}` : 'reviewer could not solve it');
 
+      lap();
       stage = 'build';
       // The engine's seed key: the date for a daily, the id for unlimited.
       const puzzle = buildPuzzle(c, { lists, version, id: slot.id, seedKey: slot.date ?? slot.id, level: slot.level, date: slot.date });
+      lap();
+      progress('saved');
       return { puzzle, answer: c.answer };
     } catch (e) {
-      if (e instanceof LlmAuthError) throw e;
       const reason = (e as Error).message;
+      if (stage !== 'gates') lap(); // gates is synchronous and not timed
+      if (e instanceof LlmAuthError) {
+        progress(`aborted: ${reason}`);
+        throw e;
+      }
+      progress(`rejected at ${stage}: ${reason}`);
       report.rejections[stage]++;
       reasons.push(c ? `${stage} (${c.answer}): ${reason}` : `${stage}: ${reason}`);
       if (c) rejected.push({ answer: c.answer, reason });

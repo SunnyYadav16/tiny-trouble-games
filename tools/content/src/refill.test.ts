@@ -67,7 +67,7 @@ function fakes(script: Script = {}) {
       return script.solve?.shift() ?? [answerOf.get(r.clue)!];
     }),
   };
-  const run = (extra: { maxTries?: number; limit?: number } = {}) => refill({ llm, today: TODAY, lists, version: 'test-1', dir, ...extra });
+  const run = (extra: { maxTries?: number; limit?: number; log?: (line: string) => void } = {}) => refill({ llm, today: TODAY, lists, version: 'test-1', dir, ...extra });
   return { llm, log, run };
 }
 
@@ -251,6 +251,33 @@ describe('refill', () => {
     const report = await f.run({ limit: 1 });
     expect(report.created).toEqual([`wp-${TODAY}`]);
     expect(f.llm.propose).toHaveBeenCalledTimes(1);
+  });
+
+  it('logs one progress line per try, with stage seconds and the outcome', async () => {
+    seed({ skip: [0] });
+    const f = fakes({ review: [{ accurate: false, reason: 'the fruit is not blue' }] });
+    const lines: string[] = [];
+    await f.run({ log: (l) => lines.push(l) });
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatch(new RegExp(`^wp-${TODAY} try 1: propose \\d+\\.\\ds → review \\d+\\.\\ds → rejected at review: clue is inaccurate: the fruit is not blue$`));
+    expect(lines[1]).toMatch(new RegExp(`^wp-${TODAY} try 2: propose \\d+\\.\\ds → review \\d+\\.\\ds → solve \\d+\\.\\ds → build \\d+\\.\\ds → saved$`));
+  });
+
+  it('logs a gate rejection without timing the stages it never reached', async () => {
+    seed({ skip: [0] });
+    const lines: string[] = [];
+    await fakes({ propose: [{ answer: 'QUART' }] }).run({ log: (l) => lines.push(l) });
+    expect(lines[0]).toMatch(new RegExp(`^wp-${TODAY} try 1: propose \\d+\\.\\ds → rejected at gates: `));
+    expect(lines[0]).not.toMatch(/review/);
+  });
+
+  it('logs a line when the run aborts', async () => {
+    seed({ skip: [0] });
+    const f = fakes();
+    f.llm.propose.mockRejectedValueOnce(new LlmQuotaError('OpenRouter free daily limit reached'));
+    const lines: string[] = [];
+    await f.run({ log: (l) => lines.push(l) });
+    expect(lines).toEqual([expect.stringMatching(/^wp-.* try 1: propose \d+\.\ds → aborted: OpenRouter free daily limit reached$/)]);
   });
 
   it('records a thrown model error as a failed try', async () => {

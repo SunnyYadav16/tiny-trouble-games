@@ -79,6 +79,20 @@ describe('openrouter', () => {
     expect(JSON.stringify(solved)).not.toMatch(/MANGO/);
   });
 
+  it('asks for low reasoning effort and a 2000-token cap on every call', async () => {
+    const f = stub(respond(completion(JSON.stringify(candidate))), respond(completion(JSON.stringify(review))), respond(completion('{"guesses": ["MANGO"]}')));
+    const llm = createOpenRouterLlm(KEY, undefined, f);
+    await llm.propose({ topic: 'fruit', level: 'normal', avoid: [], rejected: [] });
+    await llm.review({ candidate });
+    await llm.solve(solveRequest);
+    for (const i of [0, 1, 2]) expect(sent(f, i).body).toMatchObject({ reasoning: { effort: 'low' }, max_tokens: 2000 });
+  });
+
+  it('says the output cap was hit when a reply ends on length', async () => {
+    const f = stub(respond(completion('{"guesses": ["MAN', 'length')));
+    await expect(createOpenRouterLlm(KEY, undefined, f).solve(solveRequest)).rejects.toThrow(/output cap of 2000 tokens reached/);
+  });
+
   it('throws a clear error on malformed JSON, an error in a 200 body, no choices, an unexpected finish, or no text', async () => {
     const cases: [unknown, RegExp][] = [
       [completion('{"guesses": "MANGO"}'), /not the expected JSON/],
