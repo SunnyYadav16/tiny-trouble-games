@@ -1,0 +1,29 @@
+{
+  "id": "wp-2026-10-25",
+  "game": "wordpath",
+  "rulesVersion": "wordpath/v1",
+  "clue": "Without one, most locomotives cannot turn their wheels; diesel and steam versions convert energy into pulling power.",
+  "length": 6,
+  "grids": {
+    "6": "INNGNEGGNIGINGIGGNEEIIGEINEGNEGIIING",
+    "7": "IEIEEEGIINIINNIENNEEGNIGNNNGIEGENNGGNNENGEINEGGGG",
+    "8": "INNEGIIEGINNENGENGGNGEEIEEIGEIGGNNIIGGNNNGGIGGEEGENGGEINGGNGGNEI",
+    "9": "GNENNEEEGNIINEGEENIEENEGIIIININEIIGNNNIEIIIENNNGIEEGEGNEEEIIENNNIGNNIEIGNNINEEIGN",
+    "10": "GNNENEGIIGEIGNEIIEEIEIIEGGIEIGNEEEEEIGIEGEEEGINIENIENNEINGEIENINNEEIGIENINNGNEGENNGNEGEIININENIININI",
+    "15": "NNGGNNIGEIIIGEIENENNEIGGEIIIGEGIINNIEGIIINNIIEGGIIEIGGGEINIIIINEIGIEIENEEGGEGENEGEENEEENEEIIENGEGNEENGGNNNENENGINIINGIENIEEGNNENGNEGEIEGNGGNEIGENGGINIENGNGNEGGGEINNEGGIGGENGEIGGNGIGNGNEIGGGGNENGEGEENEGIGIIIIIIEENGNEEIIINIIIGN"
+  },
+  "checks": {
+    "6": "io.ip.j3.j2.j8.j6",
+    "7": "jc.ht.hy.i7.i6.i1",
+    "8": "ic.if.i7.hz.hw.jg",
+    "9": "ik.kn.kk.kv.ku.kp",
+    "10": "kx.l2.l3.kt.ki.kj",
+    "15": "kc.fh.f6.kd.jw.jz"
+  },
+  "meta": {
+    "wordListVersion": "wl-2026-10-c",
+    "generatorVersion": "gen-1",
+    "level": "normal"
+  },
+  "date": "2026-10-25"
+}

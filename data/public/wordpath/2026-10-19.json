@@ -1,0 +1,29 @@
+{
+  "id": "wp-2026-10-19",
+  "game": "wordpath",
+  "rulesVersion": "wordpath/v1",
+  "clue": "Over time, exposure to the elements turns the exterior of the Statue of Liberty into a greenish patina because it is clad in this material.",
+  "length": 6,
+  "grids": {
+    "6": "REPCOCRCPPPPCCOORREERRCOEEPCOEPPOCPP",
+    "7": "OPOOPCRCECPROPORPPPEPOEOOOEPPPREEOORERPPECEPECOOP",
+    "8": "POOEEOCPPRRORECCPRRRCCOERECOREPECRCPROEEOPPPOEOEEEOCEPORORRCOPPO",
+    "9": "ORCCCCREPERCOECCPOROCROERREPPOEPPOERORPOEOROERCRROCCROEOPEPEREEEEPOEPRPOPOPOECOCC",
+    "10": "CPRRRCCEOEEPREECEOEPOREEOCCOPOEEOOROPCROROCPRPORORORCROCOROCOOECCPPPCRECERCCPEPPPEPRORRPRPCOPRCRPOPO",
+    "15": "EEOPCPCOCORCCPOOCCCPORRPOOOCORRRCCPEORPCPRECPEPPPPOOORRORPCPOERECCECRRPRPCOEPRERRCCEPPCCCOECPRCEPECEORPRCCECEORRRPPECOPCPCCCEERPPPOCCCEORPEOROEOCPOEPEROPOCRROEOPCCOEPCCCPRCOPPRPRCCECCRCCPERRCCEPRPCRRPEROPPCPPCCORRCCRCPOCCRCPE"
+  },
+  "checks": {
+    "6": "iw.iz.j1.iv.is.it",
+    "7": "i0.i3.hu.hv.je.jf",
+    "8": "ie.if.i7.i4.ic.ik",
+    "9": "if.i4.hx.je.jf.j4",
+    "10": "lb.la.l5.l3.kt.ks",
+    "15": "kk.if.ic.id.ii.ij"
+  },
+  "meta": {
+    "wordListVersion": "wl-2026-10-c",
+    "generatorVersion": "gen-1",
+    "level": "normal"
+  },
+  "date": "2026-10-19"
+}

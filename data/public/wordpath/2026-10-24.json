@@ -1,0 +1,29 @@
+{
+  "id": "wp-2026-10-24",
+  "game": "wordpath",
+  "rulesVersion": "wordpath/v1",
+  "clue": "Meteorologists use the Enhanced Fujita scale to rate the intensity of this phenomenon based on the damage it leaves behind.",
+  "length": 7,
+  "grids": {
+    "6": "AOTNRRTRNTONORADOTTDRNROADDAAAROTANR",
+    "7": "DATOOTNATORRANATOANORADRDNRADATOOTDDATTRNNRORDDAD",
+    "8": "NOTRTNODNTNANTRRTDORAADNNNARNDRRTTNNTTRRONDRANNRRNAARNADNRDOOTOT",
+    "9": "DNNTRTNNTONDAONADNNAONRTNOOTNTDODRRTDNDNTRTRTANROANTRORARTTDDTODTTARRANRTTNNOATOT",
+    "10": "RAARDNODNTROORNDTDTTNTTTADODNAANDRARTTTNDDDDDAOTODDATARADAONTORNARTTNORAOOODNODNDODNTTAADNRNRODTDRRR",
+    "15": "NDOTRDANRAOODRTRRADODOTATATRTDATRNTONDNRRNRDTRNTTTDRRROORNAAATTAADNTDAAOTNDTOORRRNORNOTOTRDROTONTNRADTARTANRNDNNDNONDTNOTDNRADNDORTOOAODNDTNDNNDADOANRROOTAOTAOTRNNAORNNARANNDADOATNNONADTONADRTTTTDARRONNATONODANNANNDNTDATTRADD"
+  },
+  "checks": {
+    "6": "iv.is.iq.j1.iz.iy.j9",
+    "7": "io.ip.j2.jb.j8.jh.je",
+    "8": "hx.i5.id.ic.if.in.im",
+    "9": "i5.je.j7.j4.ix.j2.j5",
+    "10": "j7.ix.iw.iz.jh.jg.jj",
+    "15": "km.l3.l2.kx.jq.jl.kw"
+  },
+  "meta": {
+    "wordListVersion": "wl-2026-10-c",
+    "generatorVersion": "gen-1",
+    "level": "normal"
+  },
+  "date": "2026-10-24"
+}

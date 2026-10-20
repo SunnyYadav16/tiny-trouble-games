@@ -1,0 +1,29 @@
+{
+  "id": "wp-2026-10-20",
+  "game": "wordpath",
+  "rulesVersion": "wordpath/v1",
+  "clue": "This heavy vehicle with massive rear tires often pulls plows across a muddy field.",
+  "length": 7,
+  "grids": {
+    "6": "AROOACTRRTRTROTTTOTATORORCRTCACATATR",
+    "7": "AROCAOTTRROOOATAORTARCOOACCAATTATOROOOARCTCCTCTTT",
+    "8": "CTCRAAROOTTTORRACROTATRORCTRRRTTOORAARARTCOTRTCRRARRCOTCTAACTTRR",
+    "9": "OCRRRCATCACTCTATAOCCCCTAAAAROCAROAARRRAARCCATTOAATRCARCTCTOTRTCORACOACCOCRRTACTAR",
+    "10": "AROORARRACCTARATRORTCARATOARTOTAACARCAOARRCRCRRTRTTCTTORROCCOOTRTCCRATAOTOAACTCCAOTOCTCOTORATOACRCCR",
+    "15": "ARAOOCOTRTOTOOOATAARRTCOCTORTACOAATCAARTTTRARRCOTTRRTCOTCCCACRCROORTORARCTOORORCAOTCCACACTTAOCCOOAACRRACRCACTOTTOTCOAAARORCATCOAACARROAOTCAOTTCCOCTTOOTOAOATOOCAOTTOTOATTRRTOTATCOTAOAACRACATACTTROCCTCRTOORCTOCCCTTRTTAROAOCRCOA"
+  },
+  "checks": {
+    "6": "hz.hy.jc.jd.ji.j4.j7",
+    "7": "jb.j8.jh.jg.hx.hw.hz",
+    "8": "il.id.ic.i4.i5.hx.jh",
+    "9": "ku.kv.kk.il.ia.i3.hs",
+    "10": "ko.km.kh.kr.l9.l8.jq",
+    "15": "fh.kc.jz.jw.lb.ku.kp"
+  },
+  "meta": {
+    "wordListVersion": "wl-2026-10-c",
+    "generatorVersion": "gen-1",
+    "level": "normal"
+  },
+  "date": "2026-10-20"
+}

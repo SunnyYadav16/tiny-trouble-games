@@ -1,0 +1,29 @@
+{
+  "id": "wp-2026-10-23",
+  "game": "wordpath",
+  "rulesVersion": "wordpath/v1",
+  "clue": "Cardiologists specialize in treating this tireless organ that beats roughly one hundred thousand times each day.",
+  "length": 5,
+  "grids": {
+    "6": "AHTHTHTHHRHRRRHAHERHAAERARHRREEHETRA",
+    "7": "RHEAHTEAHEAAAAERTRHAAETRHEARTAHAHERAAAHHAEAAETRTR",
+    "8": "EHTRHAAATRTRRTHTRTTTTHREERTTRHHAHHEARHHERTHAAHHEERTAAHATTTRHEEAR",
+    "9": "HRAHETHRRAHRAAAHRTEEAHHHRHHHHHEERHAHRRRTETRTHARRTAETTTEAEEAERTETRHHEAHETRHHRHEHHE",
+    "10": "HETHAEHRTHHRRHETRTHEEETEHAHRRRTTETRHEETRTTTTREAERRHHAAERRHHERHEEHERHEEHEATRARHHRRHAEHAAEERAHEHRAAAEA",
+    "15": "RHAHHHEHHEHEHEHRHEAHARHHAEEEARTEHHHRAHARHHAHHEEHRRTAAHHHTHAEEEAAHHHHEHHTAEAETHAETHHRHAHHEAAEAAAAHRTRTTRHEAHHTAHHTTHTRHHAHEAAETHAHERHAATETAAAHHRRRTRRTAAAHEHEHHTTTTTHHEAEERHAHRETTRTRTRRHHHRHHETREEEEHREHRAHHAEHRAEAAEHEHETETEAHHE"
+  },
+  "checks": {
+    "6": "j9.j7.j4.ji.hw",
+    "7": "j1.j0.j3.j8.j9",
+    "8": "i8.ig.ij.ii.ia",
+    "9": "kk.il.ia.kl.ii",
+    "10": "kl.kk.ku.kv.ks",
+    "15": "fx.ea.eb.eo.ep"
+  },
+  "meta": {
+    "wordListVersion": "wl-2026-10-c",
+    "generatorVersion": "gen-1",
+    "level": "normal"
+  },
+  "date": "2026-10-23"
+}

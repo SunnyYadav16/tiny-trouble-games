@@ -1,0 +1,29 @@
+{
+  "id": "wp-2026-10-22",
+  "game": "wordpath",
+  "rulesVersion": "wordpath/v1",
+  "clue": "Players of this pastime maneuver sixteen pieces across sixty-four squares to trap an opposing monarch.",
+  "length": 5,
+  "grids": {
+    "6": "SCHESHSCCSHSEHHHCECSSCHCCHSHHSCSSHEE",
+    "7": "HSHHCHHHSEHHCHEHHEHHHHCSCSEEHSCCSCHSESCSEHCHHHSSH",
+    "8": "ESCSEEHEHSCCCCEECSECEECHCHESCCECHSHCCHSCSCSCHHCCEHECSSSSHHSCEHSC",
+    "9": "CCSHHHSCHSCCHCSESCEHHECCCSCCESHECESSCECCHEHHSCSCHHEHSCHCHEEHHEHCSCESSSSHHHEEHHHHH",
+    "10": "SCEHESCHHHHSSCCCCEEEHCCCSHHECCEHCSCSHECSCCHCHHEHEHESHHEHHHHHEHHHCCHEECHCCCHCCCEHESCHCCSECECCSHESHCHE",
+    "15": "EHCHSCECCCCECECHEHSSCSCHSECSSHECCSSSCCSEHEHHSCHCCHCECCEHESCCECHCCCEECSHHSCEECHCCSCESSCHCESHCEHSHEHHSCSCSCCECEEHHSSSCEEECSSEHHHESHHSECCSSHSHCHHCHSSCCHSESCESCHSHECESCCEHHHHCCCSCSHCHHSHHCCESECSSSCSCCSECCSCECSCEESCCCHSCSSHCECSCSC"
+  },
+  "checks": {
+    "6": "iq.iw.ix.ir.it",
+    "7": "ix.ja.jj.jg.hx",
+    "8": "j9.j1.it.is.j0",
+    "9": "i8.ij.ig.kj.kg",
+    "10": "iw.iu.iv.ix.j2",
+    "15": "ff.fc.kb.ka.k5"
+  },
+  "meta": {
+    "wordListVersion": "wl-2026-10-c",
+    "generatorVersion": "gen-1",
+    "level": "normal"
+  },
+  "date": "2026-10-22"
+}
