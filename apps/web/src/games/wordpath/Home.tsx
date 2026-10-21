@@ -72,12 +72,16 @@ export function Home({ now, onOpen }: Props) {
             <h2>Word Path</h2>
             <p className="desc">Read the clue, then trace the one path of touching tiles that spells the answer.</p>
             <div className="gc-status">
-              <span id={`${ids}-date`}>{dayLabel(date, wide)}</span>
+              <span>{dayLabel(date, wide)}</span>
               <span aria-hidden="true">·</span>
               <b id={`${ids}-status`}>{status}</b>
               <span className="grow" />
               {streak > 0 && <StreakPill streak={streak} id={`${ids}-streak`} />}
             </div>
+            {/* Always the long date for a screen reader, whatever short form the phone shows. */}
+            <span id={`${ids}-date`} className="visually-hidden" aria-hidden="true">
+              {dayLabel(date, true)}
+            </span>
             {/* Its ::after covers the whole card, so the card is one click target. Its name is its own visible text (WCAG 2.5.3); the status line describes it. */}
             <a
               className="gc-link"

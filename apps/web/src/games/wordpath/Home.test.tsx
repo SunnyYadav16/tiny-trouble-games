@@ -45,20 +45,20 @@ describe('Home', () => {
     const { card } = open();
     expect(screen.getByText('Not played yet')).toBeInTheDocument();
     expect(card()).toHaveAccessibleName('Play Word Path'); // WCAG 2.5.3: the name is the link's visible text
-    expect(card()).toHaveAccessibleDescription('Mon, Nov 2 Not played yet');
+    expect(card()).toHaveAccessibleDescription('Monday, November 2 Not played yet');
   });
 
   it('reads "In progress" when today is saved unfinished', () => {
     saveActive(DAILY.active, { puzzleId: 'wp-2026-11-02', date: '2026-11-02', size: 7, elapsedMs: 9_000, state: wordpathV1.initialState() });
     const { card } = open();
     expect(screen.getByText('In progress')).toBeInTheDocument();
-    expect(card()).toHaveAccessibleDescription('Mon, Nov 2 In progress');
+    expect(card()).toHaveAccessibleDescription('Monday, November 2 In progress');
   });
 
   it('labels an earlier day\'s unfinished session with that day, not today', () => {
     saveActive(DAILY.active, { puzzleId: 'wp-2026-10-19', date: '2026-10-19', size: 7, elapsedMs: 9_000, state: wordpathV1.initialState() });
     const { card } = open();
-    expect(card()).toHaveAccessibleDescription('Mon, Oct 19 In progress');
+    expect(card()).toHaveAccessibleDescription('Monday, October 19 In progress');
     expect(screen.getByText('Mon, Oct 19')).toBeInTheDocument();
   });
 
@@ -67,14 +67,14 @@ describe('Home', () => {
     saveResult(DAILY.results, rec('2026-11-02'));
     const { card } = open();
     expect(screen.getByText('Solved in 0:41')).toBeInTheDocument();
-    expect(card()).toHaveAccessibleDescription('Mon, Nov 2 Solved in 0:41 2-day streak');
+    expect(card()).toHaveAccessibleDescription('Monday, November 2 Solved in 0:41 2-day streak');
   });
 
   it('reads "Gave up" for a given-up daily', () => {
     saveResult(DAILY.results, rec('2026-11-02', { outcome: 'gave-up' }));
     const { card } = open();
     expect(screen.getByText('Gave up')).toBeInTheDocument();
-    expect(card()).toHaveAccessibleDescription('Mon, Nov 2 Gave up');
+    expect(card()).toHaveAccessibleDescription('Monday, November 2 Gave up');
   });
 
   it('opens how to play from the top bar', async () => {

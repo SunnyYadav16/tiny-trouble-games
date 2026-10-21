@@ -318,7 +318,7 @@ Two families of form. The garden objects are round and soft: pavers are circles 
 - **Keys:** `kbd` caps in stone-2 with a rule border, 6px radius, 12px semibold.
 
 ### Cards / Containers
-- **Home game card:** one link over the whole card; engraved double rule; hedge art panel with a 4×4 example board and caption; title, description, a ruled status line, and a big primary call to action. Hover opens the outer rule from 5px to 8px and lifts the card.
+- **Home game card:** the Play link stretched over the whole card, so the card stays one click target and one tab stop; engraved double rule; hedge art panel with a 4×4 example board and caption; title, description, a ruled status line, and a big primary call to action. Hover opens the outer rule from 5px to 8px and lifts the card.
 - **Unlimited register:** an engraved double-rule frame with one row per level, rows divided by `rule`; each row is one button (mini plot, name, description, solved and average, Play or Continue). Hover tints the row 5% ink.
 - **Hedge panel:** the Today's puzzle panel and the Home art panel reuse the hedge band's texture and inset light.
 - **Dialog:** a native modal `<dialog>` on stone, 20px radius, rule border, dialog shadow over a scrim; opens from scale 0.96 and opacity 0 in 200ms; close button top right.
