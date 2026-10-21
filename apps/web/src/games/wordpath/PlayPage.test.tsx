@@ -114,6 +114,28 @@ describe('PlayPage', () => {
     expect(screen.queryByText("Unlimited puzzles aren't ready yet")).toBeNull();
   });
 
+  it('keeps a level with a saved puzzle playable when its pool is empty or the index is missing', async () => {
+    saveActive(unlimitedKeys('hard').active, session('2026-11-02'));
+    serveIndex({ easy: 40, normal: 40, hard: 0 });
+    open();
+    const hard = await screen.findByRole('button', { name: /^Continue Hard\./ });
+    expect(hard).toBeEnabled();
+    expect(within(hard).getByText('In progress')).toBeInTheDocument();
+    expect(within(hard).queryByText('Coming soon')).toBeNull();
+    expect(hard).not.toHaveAccessibleName(/Coming soon/);
+  });
+
+  it('with no index, only the level that has a saved puzzle stays playable', async () => {
+    saveActive(unlimitedKeys('normal').active, session('2026-11-02'));
+    serveIndex(null);
+    open();
+    expect(await screen.findByText("Unlimited puzzles aren't ready yet")).toBeInTheDocument();
+    const normal = screen.getByRole('button', { name: /^Continue Normal\./ });
+    expect(normal).toBeEnabled();
+    expect(within(normal).queryByText('Coming soon')).toBeNull();
+    expect(screen.getByRole('button', { name: /^Easy\..*Coming soon\.$/ })).toBeDisabled();
+  });
+
   it('disables all three when there is no unlimited index', async () => {
     serveIndex(null);
     open();

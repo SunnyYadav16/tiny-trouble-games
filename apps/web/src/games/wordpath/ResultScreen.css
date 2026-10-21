@@ -34,6 +34,8 @@
 @media (max-width: 899.98px) {
   .result .btn { flex: 1 1 auto; justify-content: center; }
   .result .btn.today { flex: none; align-self: flex-start; }
+  /* the board ends the scrolled page: leave ground below it */
+  .play:has(.result) { padding-bottom: var(--space-6); }
 }
 
 @media (min-width: 900px) {

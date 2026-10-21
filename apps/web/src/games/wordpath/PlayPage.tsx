@@ -95,9 +95,11 @@ export function PlayPage({ now, onBack, onDaily, onUnlimited }: Props) {
               const { name, desc, route } = LEVEL_INFO[level];
               const { solved, avgSolveMs } = stats.byLevel[level];
               const avg = formatDuration(avgSolveMs);
-              // Unknown until the index loads; then a level with no puzzles waits as "Coming soon".
-              const off = index !== null && (!index.ok || index.count[level] === 0);
-              const go = saved.has(level) ? 'Continue' : 'Play';
+              // Unknown until the index loads; then a level with no puzzles waits as "Coming soon"
+              // unless a saved puzzle can still continue (it loads from its own file).
+              const resume = saved.has(level);
+              const off = index !== null && !resume && (!index.ok || index.count[level] === 0);
+              const go = resume ? 'Continue' : 'Play';
               const record = solved ? `${solved} solved, average ${avg}.` : 'None solved yet.';
               return (
                 <div className="lvl" key={level} data-off={off || undefined}>
@@ -108,14 +110,14 @@ export function PlayPage({ now, onBack, onDaily, onUnlimited }: Props) {
                   <button
                     type="button"
                     className="lvl-btn"
-                    disabled={index === null || off}
+                    disabled={(index === null && !resume) || off}
                     aria-label={off ? `${name}. ${desc} ${record} Coming soon.` : `${go} ${name}. ${desc} ${record}`}
                     onClick={() => onUnlimited(level)}
                   >
                     <span className="txt">
                       <span className="name">
                         {name}
-                        {saved.has(level) && <span className="tag">In progress</span>}
+                        {resume && <span className="tag">In progress</span>}
                       </span>
                       <span className="desc">{desc}</span>
                       <span className="stat">
@@ -132,7 +134,7 @@ export function PlayPage({ now, onBack, onDaily, onUnlimited }: Props) {
                     {off ? (
                       <span className="go soon">Coming soon</span>
                     ) : (
-                      <span className="go" data-cont={saved.has(level) || undefined}>
+                      <span className="go" data-cont={resume || undefined}>
                         <span>{go}</span>
                         <Icon d={NEXT} />
                       </span>

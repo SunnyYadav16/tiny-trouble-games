@@ -11,7 +11,7 @@ interface Props {
  * The route as a line through tile centres, under the pavers so it shows as bridges between them.
  * While the player lays the route, the newest segment is its own `<line>` so it can draw in
  * (`drawSegment`); the polyline's dash pattern leaves that last segment to it.
- * A wrong route shows no line (its tiles carry the dashed outline instead).
+ * A revealed route is dotted and drawn over the pavers (Board.css). A wrong route shows no line (its tiles carry the dashed outline instead).
  */
 export function RouteLine({ size, tile, route, state }: Props) {
   if (route.length < 2 || state === 'wrong') return null;
@@ -21,12 +21,13 @@ export function RouteLine({ size, tile, route, state }: Props) {
   const [x1, y1] = points[points.length - 2]!;
   const [x2, y2] = points[points.length - 1]!;
   // Adjacent tiles are always one tile apart, so the polyline is (length - 1) tiles long.
-  const dash = state === 'revealed' ? `1 ${tile * 0.22}` : laying ? `${(route.length - 2) * tile} ${tile * 2}` : undefined;
-  const width = tile * (state === 'revealed' ? 0.12 : 0.16);
+  // Revealed: round dots on top of the pavers, two per tile step, 0.3 tile either side of each centre, clear of the letters.
+  const dash = state === 'revealed' ? `0 ${tile * 0.4} 0 ${tile * 0.6}` : laying ? `${(route.length - 2) * tile} ${tile * 2}` : undefined;
+  const width = tile * 0.16;
 
   return (
     <svg className="route" width={size * tile} height={size * tile} aria-hidden="true">
-      <polyline points={points.map((p) => p.join(',')).join(' ')} strokeWidth={width} strokeDasharray={dash} />
+      <polyline points={points.map((p) => p.join(',')).join(' ')} strokeWidth={width} strokeDasharray={dash} strokeDashoffset={state === 'revealed' ? tile * 0.7 : undefined} />
       {laying && <line key={route.slice(-2).join('-')} className="route-seg" x1={x1} y1={y1} x2={x2} y2={y2} strokeWidth={width} />}
     </svg>
   );

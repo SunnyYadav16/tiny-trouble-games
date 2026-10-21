@@ -115,6 +115,7 @@ export function Board({ size, tile, cells, route, routeState, disabled, onTap }:
                     className="tile"
                     data-parity={(r + c) % 2}
                     data-selected={selected || undefined}
+                    data-start={(routeState === 'revealed' && i === route[0]) || undefined}
                     aria-label={`${cells[i]}, row ${r + 1}, column ${c + 1}${selected ? ', selected' : ''}`}
                     aria-disabled={disabled || undefined}
                     tabIndex={!disabled && i === tabStop ? 0 : -1}

@@ -25,6 +25,7 @@
 .route { position: absolute; inset: 0; pointer-events: none; overflow: visible; opacity: .95; }
 .route polyline, .route line { fill: none; stroke: var(--lantern); stroke-linecap: round; stroke-linejoin: round; }
 .board[data-state="solved"] .route * { stroke: var(--leaf); }
+.board[data-state="revealed"] .route { z-index: 2; opacity: 1; }
 .board[data-state="revealed"] .route * { stroke: var(--cream); }
 
 .tile {
@@ -60,8 +61,10 @@
 .board[data-state="wrong"] .tile[data-selected] .paver { outline: 2px dashed var(--cream); outline-offset: 2px; filter: saturate(.75); }
 .board[data-state="solved"] .tile[data-selected] { --face: var(--leaf); --side: var(--leaf-side); }
 .board:is([data-state="solved"], [data-state="revealed"]) .tile[data-selected] .paver { outline: 2px solid var(--cream); outline-offset: 1px; }
+/* the route's first tile carries a heavier ring, so a given-up board reads from where it starts */
+.board[data-state="revealed"] .tile[data-start] .paver { outline-width: 4px; outline-offset: 2px; }
 /* finished board: the route stands out, the rest steps back */
-.board:is([data-state="solved"], [data-state="revealed"]) .tile:not([data-selected]) .paver { opacity: .55; }
+.board:is([data-state="solved"], [data-state="revealed"]) .tile:not([data-selected]) .paver { opacity: .72; } /* cream letter on the dimmed face stays above 4.5:1 */
 
 /* hover lift: its own timing (150 ms ease, also under reduced motion); the press keeps the paver's 120 ms */
 @media (hover: hover) {
