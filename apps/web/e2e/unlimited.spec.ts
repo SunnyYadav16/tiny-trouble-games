@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { TODAY, board, hit, installPuzzle, installUnlimited, open, selected, stored, tapRoute, tile, toWordPath } from './helpers';
+import { TODAY, board, hit, hitOver, installPuzzle, installUnlimited, open, selected, stored, tapRoute, tile, toWordPath } from './helpers';
 
 const solvedHeading = (page: Page) => page.getByRole('heading', { level: 2, name: 'Solved' });
 const level = (page: Page, action: 'Play' | 'Continue', name: string) => page.getByRole('button', { name: `${action} ${name}`, exact: true });
@@ -9,6 +9,18 @@ const row = (page: Page, name: string) => page.locator('.lvl').filter({ has: lev
 let unlimited: Awaited<ReturnType<typeof installUnlimited>>;
 test.beforeEach(async ({ page }) => {
   unlimited = await installUnlimited(page, 3);
+});
+
+test('the whole level row is one click target: its description text opens the level too', async ({ page }) => {
+  await open(page);
+  await toWordPath(page);
+  for (const name of ['Easy', 'Normal']) {
+    const lvl = page.locator('.lvl').filter({ has: level(page, 'Play', name) });
+    await hitOver(lvl, lvl.locator('.desc'));
+    await expect(page.getByText(`Unlimited · ${name}`)).toBeVisible();
+    await hit(page.getByRole('banner').getByRole('button', { name: 'Back' }));
+    await expect(page.getByRole('heading', { level: 2, name: "Today's puzzle" })).toBeVisible();
+  }
 });
 
 test('two puzzles back to back with Next puzzle', async ({ page }) => {

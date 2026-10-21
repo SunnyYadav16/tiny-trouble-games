@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { TODAY, board, hit, installPuzzle, installUnlimited, open, toWordPath } from './helpers';
+import { TODAY, board, hit, hitOver, installPuzzle, installUnlimited, open, toWordPath } from './helpers';
 
 const h1 = (page: Page) => page.getByRole('heading', { level: 1 });
 const wordPathPage = (page: Page) => page.getByRole('heading', { level: 2, name: "Today's puzzle" });
@@ -22,10 +22,20 @@ test.describe('screens', () => {
   test('Home shows the Word Path card with its example board', async ({ page }) => {
     await expect(h1(page)).toHaveText('Tiny Trouble Games');
     await expect(page.getByRole('heading', { level: 2, name: 'Word Path' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Play Word Path' })).toHaveAccessibleDescription(/^(Tuesday, November 10|Tue, Nov 10) Not played yet$/);
+    await expect(page.getByRole('link', { name: 'Play Word Path' })).toHaveAccessibleDescription('Tuesday, November 10 Not played yet');
     await expect(page.locator('.gamecard .board')).toBeVisible();
     await expect(page.locator('.gamecard .board .tile')).toHaveCount(16);
     await expect(page.getByText('TRAIL, in one path')).toBeVisible();
+  });
+
+  test('the whole card is one click target: its art and its text open the Word Path page too', async ({ page }) => {
+    const card = page.locator('.gamecard');
+    for (const over of [page.locator('.gamecard .gc-art .board'), page.locator('.gamecard h2'), page.locator('.gamecard .desc')]) {
+      await hitOver(card, over);
+      await expect(wordPathPage(page)).toBeVisible();
+      await hit(back(page));
+      await expect(h1(page)).toHaveText('Tiny Trouble Games');
+    }
   });
 
   test('the card opens the Word Path page; Play daily opens the daily and Back returns to the page', async ({ page }) => {

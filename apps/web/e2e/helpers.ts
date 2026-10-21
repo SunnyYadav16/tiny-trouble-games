@@ -18,6 +18,13 @@ export async function open(page: Page, { at = `${TODAY}T10:00:00`, howToSeen = t
 /** A tap on the phone project, a click on desktop. */
 export const hit = (l: Locator) => (test.info().project.use.hasTouch ? l.tap() : l.click());
 
+/** A hit on `container` at the centre of `over`, which is not itself the control: proves the whole area is a click target, which a role locator's centre click cannot. */
+export async function hitOver(container: Locator, over: Locator) {
+  const [c, o] = [await container.boundingBox(), await over.boundingBox()];
+  const position = { x: o!.x - c!.x + o!.width / 2, y: o!.y - c!.y + o!.height / 2 };
+  await (test.info().project.use.hasTouch ? container.tap({ position }) : container.click({ position }));
+}
+
 /** The play screen's board, once it has measured its slot and locked its size. */
 export const board = (page: Page) => page.locator('main.play:not([data-probe])').getByRole('grid');
 export const tile = (page: Page, cell: number) => board(page).getByRole('button').nth(cell);
