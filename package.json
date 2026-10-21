@@ -13,6 +13,7 @@
     "bench": "tsx tools/generator/src/bench.ts",
     "dev": "pnpm --filter @ttg/web dev",
     "build": "pnpm --filter @ttg/web build",
+    "e2e": "pnpm --filter @ttg/web e2e",
     "test": "vitest run",
     "lint": "oxlint",
     "typecheck": "pnpm -r typecheck"
