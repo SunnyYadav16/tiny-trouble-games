@@ -2,11 +2,11 @@ import { useGSAP } from '@gsap/react';
 import { useRef, useState } from 'react';
 import { localDateKey } from '../../shared/daily';
 import { Board } from './Board';
-import { EXAMPLE } from './example';
+import { EXAMPLE, EXAMPLE_FRAMES, EXAMPLE_LAST } from './example';
 import { StreakPill } from './Header';
 import { HowToPlay } from './HowToPlay';
 import { HELP, Icon, Mark, NEXT } from './icons';
-import { prefersReduced, traceRoute } from './motion';
+import { layRoute, prefersReduced } from './motion';
 import { loadStats } from './stats';
 import { dailyStatus, dayLabel } from './today';
 import { WIDE, useMedia } from './useMedia';
@@ -30,21 +30,23 @@ export function Home({ now, onOpen }: Props) {
   const [howTo, setHowTo] = useState(false);
   const card = useRef<HTMLDivElement>(null);
 
-  // The example lays its route once on show, and again on hover or focus once the last trace is done. Reduced motion: the static route.
-  const tracing = useRef<gsap.core.Animation | null>(null);
-  const trace = () => {
-    if (prefersReduced() || (tracing.current && tracing.current.progress() < 1)) return;
-    const tiles = card.current!.querySelectorAll('.tile');
-    tracing.current = traceRoute(EXAMPLE.solution.map((c) => tiles[c]!), false);
-  };
-  const { contextSafe } = useGSAP(
+  // The example lays its route tap by tap once on show, and again on hover or focus once the last trace is done.
+  // Reduced motion: the static route.
+  const [reduced] = useState(prefersReduced);
+  const [frame, setFrame] = useState(reduced ? EXAMPLE_LAST : 0);
+  const [run, setRun] = useState(0);
+  const tracing = useRef<gsap.core.Timeline | null>(null);
+  useGSAP(
     () => {
-      trace();
-      return () => void (tracing.current = null); // reverted (unmount, or StrictMode's rerun): the next show traces again
+      if (reduced) return;
+      tracing.current = layRoute(setFrame, EXAMPLE_LAST);
+      return () => void (tracing.current = null);
     },
-    { scope: card },
+    { scope: card, dependencies: [run], revertOnUpdate: true },
   );
-  const retrace = () => contextSafe(trace)();
+  const retrace = () => {
+    if (tracing.current?.progress() === 1) setRun((n) => n + 1);
+  };
 
   const streakText = streak > 0 ? ` ${streak}-day streak.` : '';
   return (
@@ -63,7 +65,7 @@ export function Home({ now, onOpen }: Props) {
       <main className="homepage">
         <div className="gamecard" ref={card}>
           <div className="hedge gc-art" aria-hidden="true" inert>
-            <Board size={EXAMPLE.size} tile={wide ? 70 : 52} cells={EXAMPLE.cells} route={EXAMPLE.solution} routeState="active" disabled onTap={noop} />
+            <Board size={EXAMPLE.size} tile={wide ? 70 : 52} cells={EXAMPLE.cells} route={EXAMPLE_FRAMES[frame]!.route} routeState="active" disabled onTap={noop} />
             <span className="cap">{EXAMPLE.word}, in one path</span>
           </div>
           {/* Its ::after covers the whole card, so the art panel is part of the click target without sitting inside the link. */}

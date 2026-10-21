@@ -6,11 +6,11 @@ import {
   celebrate,
   countUp,
   drawSegment,
+  layRoute,
   petalBurst,
   screenEnter,
   selectPop,
   solveCascade,
-  traceRoute,
   wrongShake,
   type Burst,
 } from './motion';
@@ -63,7 +63,6 @@ function everyEffect(reduced: boolean): [string, Anim][] {
     ['wrongShake', wrongShake(els(5), reduced)],
     ['solveCascade', solveCascade(els(5), reduced)],
     ['petalBurst', petalBurst(burst(5), reduced)],
-    ['traceRoute', traceRoute(els(5), reduced)],
     ['screenEnter', screenEnter(document.body.appendChild(document.createElement('main')), reduced)],
     ['countUp', countUp({ el: label, to: 41 }, reduced)],
   ];
@@ -108,6 +107,14 @@ describe('motion', () => {
     const el = document.body.appendChild(document.createElement('span'));
     countUp({ el, to: 41, format: (n) => `0:${n}` }, true);
     expect(el.textContent).toBe('0:41');
+  });
+
+  it('layRoute shows each frame in order, one per beat, and is done within the 3 s Home trace budget', () => {
+    const shown: number[] = [];
+    const tl = layRoute((i) => shown.push(i), 5);
+    expect(tl.duration()).toBeLessThanOrEqual(3);
+    tl.progress(1);
+    expect(shown.slice(-5)).toEqual([1, 2, 3, 4, 5]);
   });
 
   it('the whole solve celebration ends within 5 s', () => {

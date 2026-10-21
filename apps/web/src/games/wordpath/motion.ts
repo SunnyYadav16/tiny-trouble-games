@@ -48,11 +48,18 @@ export function solveCascade(tiles: Element[], reduced: boolean): Anim {
   return gsap.timeline().to(tiles, { scale: 1.16, duration: 0.13, yoyo: true, repeat: 1, stagger: 0.045, ease: 'power2.out' });
 }
 
-/** Home example: the route lays itself down once, tile by tile, in under 3 s. */
-export function traceRoute(tiles: Element[], reduced: boolean): Anim {
-  if (reduced) return instant();
-  const each = Math.min(0.26, 2.8 / Math.max(1, tiles.length - 1));
-  return gsap.timeline().fromTo(tiles, { opacity: 0.35, scale: 0.86 }, { opacity: 1, scale: 1, duration: 0.16, ease: EASE.out, stagger: each });
+/** Seconds: the first tap waits for the view to settle, then one tap per beat (five taps are done by 2.3 s). */
+const FIRST_TAP = 0.5;
+const BEAT = 0.45;
+
+/**
+ * A demo route laid tap by tap (Home card, how to play): `show(i)` runs at each beat for frames 0..last.
+ * The board's own tap motion presses each tile and draws its segment. Callers skip it under reduced motion.
+ */
+export function layRoute(show: (frame: number) => void, last: number): gsap.core.Timeline {
+  const tl = gsap.timeline();
+  for (let i = 0; i <= last; i++) tl.call(show, [i], i && FIRST_TAP + (i - 1) * BEAT);
+  return tl;
 }
 
 /** A new screen rises 8 px into place over 200 ms; reduced motion fades it in. */
