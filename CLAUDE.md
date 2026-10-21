@@ -38,7 +38,7 @@ pnpm dev               # web app
 pnpm build             # production web build (apps/web/dist)
 pnpm e2e               # Playwright + axe, desktop and phone projects
 pnpm wordlists build   # rebuild content/wordlists from upstream sources
-pnpm content refill    # AI fills missing dailies and grows the unlimited pool; needs OPENROUTER_API_KEY (or GEMINI_API_KEY / ANTHROPIC_API_KEY)
+pnpm content refill    # AI fills missing dailies and grows the unlimited pool; --level easy|normal|hard fills just that level, --limit N stops after N puzzles; needs OPENROUTER_API_KEY (or GEMINI_API_KEY / ANTHROPIC_API_KEY)
 pnpm verify            # re-check every public puzzle, word list hashes, and the schedule
 pnpm bench             # generator timing per size
 ```

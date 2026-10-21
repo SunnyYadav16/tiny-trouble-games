@@ -9,12 +9,15 @@ import { addDays, refill } from './refill';
 const MUST_HAVE_DAYS = 7;
 
 let limit: number | undefined;
+let level: wordpathV1.Level | undefined;
 try {
-  const { positionals, values } = parseArgs({ allowPositionals: true, options: { limit: { type: 'string' } } });
+  const { positionals, values } = parseArgs({ allowPositionals: true, options: { limit: { type: 'string' }, level: { type: 'string' } } });
   if (positionals.join(' ') !== 'refill' || (values.limit !== undefined && !/^[1-9]\d*$/.test(values.limit))) throw new Error();
+  if (values.level !== undefined && !(wordpathV1.LEVELS as readonly string[]).includes(values.level)) throw new Error();
   limit = values.limit === undefined ? undefined : Number(values.limit);
+  level = values.level as wordpathV1.Level | undefined;
 } catch {
-  console.error('usage: pnpm content refill [--limit N]   (N: stop after N new puzzles, for a trial run)');
+  console.error('usage: pnpm content refill [--level easy|normal|hard] [--limit N]   (level: only that Unlimited level, no dailies; N: stop after N new puzzles, for a trial run)');
   process.exit(1);
 }
 let provider: ReturnType<typeof chooseProvider>;
@@ -31,7 +34,7 @@ console.log(`provider ${provider.name}: proposer ${provider.proposer}, reviewer 
 
 const today = new Date().toLocaleDateString('en-CA'); // local YYYY-MM-DD
 const { lists, version } = loadLists();
-const report = await refill({ llm, today, lists, version, limit, log: console.log });
+const report = await refill({ llm, today, lists, version, limit, level, log: console.log });
 
 for (const id of report.created) console.log(`created ${id}`);
 for (const { id, reasons } of report.failed) console.log(`failed ${id}\n  ${reasons.join('\n  ')}`);
@@ -54,5 +57,7 @@ if (missing.length > 0) console.error(`missing dailies: ${missing.join(', ')}`);
 if (short.length > 0) console.error(`fewer than ${UNLIMITED_INITIAL} unlimited puzzles: ${short.join(', ')}`);
 if (missing.length > 0 || short.length > 0) {
   if (limit) console.error(`this is expected after --limit ${limit}; run without --limit to fill the rest`);
-  process.exit(1);
+  if (level) console.error(`this is expected after --level ${level}; run without --level to fill the rest`);
+  // A level-only run is fine unless a slot failed; the other checks are not its job.
+  process.exit(level && report.failed.length === 0 ? 0 : 1);
 }

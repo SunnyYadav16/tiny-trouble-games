@@ -29,6 +29,8 @@ export interface RefillOptions {
   maxTries?: number;
   /** Stop once this many new puzzles are saved in this run (a cheap trial). */
   limit?: number;
+  /** Fill only this level's unlimited shortfall; no dailies, no other levels. */
+  level?: Level;
   /** Called once per try as it finishes, with the seconds each stage took. */
   log?: (line: string) => void;
 }
@@ -44,7 +46,7 @@ export const addDays = (date: string, days: number) => new Date(Date.parse(date)
 
 /**
  * Fills missing dailies (today onward, earliest first, always normal), then each
- * level's unlimited shortfall. A slot is saved only after every stage passes;
+ * level's unlimited shortfall. With `level`, only that level's shortfall. A slot is saved only after every stage passes;
  * existing files are never touched.
  */
 export async function refill(opts: RefillOptions): Promise<RefillReport> {
@@ -65,13 +67,13 @@ export async function refill(opts: RefillOptions): Promise<RefillReport> {
 
   try {
     const dates = new Set(store.dailies.map((p) => p.date));
-    for (let i = 0; i < AHEAD_DAYS && !capped(); i++) {
+    for (let i = 0; i < AHEAD_DAYS && !capped() && !opts.level; i++) {
       const date = addDays(today, i);
       if (!dates.has(date)) await fill({ id: `wp-${date}`, level: 'normal', date }, (p) => saveDaily(p, dir));
     }
 
     const target = unlimitedTarget(store.started ?? today, today);
-    for (const level of wordpathV1.LEVELS) {
+    for (const level of opts.level ? [opts.level] : wordpathV1.LEVELS) {
       while (!capped() && store.unlimited[level].length < target) {
         const id = nextUnlimitedId(store, level);
         const saved = await fill({ id, level }, (p) => {

@@ -67,7 +67,7 @@ function fakes(script: Script = {}) {
       return script.solve?.shift() ?? [answerOf.get(r.clue)!];
     }),
   };
-  const run = (extra: { maxTries?: number; limit?: number; log?: (line: string) => void } = {}) => refill({ llm, today: TODAY, lists, version: 'test-1', dir, ...extra });
+  const run = (extra: { maxTries?: number; limit?: number; level?: Level; log?: (line: string) => void } = {}) => refill({ llm, today: TODAY, lists, version: 'test-1', dir, ...extra });
   return { llm, log, run };
 }
 
@@ -254,6 +254,27 @@ describe('refill', () => {
     expect(report.created).toEqual([`wp-${addDays(TODAY, 1)}`, `wp-${addDays(TODAY, 2)}`]);
     expect(f.llm.propose).toHaveBeenCalledTimes(4);
     expect(loadStore(dir).unlimited.easy).toHaveLength(39);
+  });
+
+  it('with level, skips dailies and the other levels and fills only that level to the target', async () => {
+    seed({ skip: [0, 5], counts: { easy: 39, normal: 38, hard: 38 } });
+    const f = fakes();
+    const report = await f.run({ level: 'hard' });
+    expect(report.created).toEqual(['wp-u-hard-39', 'wp-u-hard-40']);
+    expect(report.failed).toEqual([]);
+    expect(existsSync(join(dir, `${TODAY}.json`))).toBe(false);
+    const store = loadStore(dir);
+    expect(store.unlimited.hard).toHaveLength(40);
+    expect(store.unlimited.easy).toHaveLength(39);
+    expect(store.unlimited.normal).toHaveLength(38);
+  });
+
+  it('with level and limit, stops at the limit', async () => {
+    seed({ skip: [0], counts: { easy: 38, normal: 40, hard: 35 } });
+    const f = fakes();
+    const report = await f.run({ level: 'hard', limit: 3 });
+    expect(report.created).toEqual(['wp-u-hard-36', 'wp-u-hard-37', 'wp-u-hard-38']);
+    expect(f.llm.propose).toHaveBeenCalledTimes(3);
   });
 
   it('caps dailies too: --limit 1 with several missing dailies fills only the first', async () => {
