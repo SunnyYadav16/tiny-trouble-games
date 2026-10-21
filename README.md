@@ -2,8 +2,6 @@
 
 Five small puzzle games, built one at a time. Word Path is the first: a daily puzzle plus unlimited play at three difficulty levels. It runs entirely in the browser, with progress kept in `localStorage`; puzzles are generated offline and served as static JSON.
 
-Rules and scope live in the specs: [Word Path spec](docs/superpowers/plans/Tiny%20Trouble%20Games_%20Word%20Path%20Spec%20v1.0-rc1.md), [plan](docs/superpowers/plans/2026-10-18-word-path-v1.md) (its Decisions table records every change to the spec), and [Games spec](Tiny-Trouble-Games-Spec-v0.4.1.md) for the other games. Project rules for contributors and agents are in [CLAUDE.md](CLAUDE.md).
-
 ## Setup
 
 Needs Node 22 or newer and pnpm.

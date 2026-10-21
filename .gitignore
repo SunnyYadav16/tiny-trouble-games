@@ -147,3 +147,17 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Local only: product design, plans, specs, decisions, and agent/tool state.
+# Not part of the product, never pushed. Files already in git need `git rm --cached`.
+docs/
+*.md
+!/README.md
+!/content/wordlists/README.md
+.impeccable/
+.superpowers/
+.playwright-mcp/
+
+# Playwright output
+apps/web/test-results/
+apps/web/playwright-report/
