@@ -28,13 +28,18 @@ describe('loadPuzzle', () => {
     expect(solutions[6]).toHaveLength(5);
   });
 
-  it('missing: 404, HTML body, network error', async () => {
+  it('missing: 404, HTML body', async () => {
     vi.stubGlobal('fetch', reply('Not found', 404));
     expect(await loadPuzzle('/x')).toEqual({ ok: false, reason: 'missing' });
     vi.stubGlobal('fetch', reply('<!doctype html><html></html>'));
     expect(await loadPuzzle('/x')).toEqual({ ok: false, reason: 'missing' });
+  });
+
+  it('offline: network error, 5xx', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('offline'))));
-    expect(await loadPuzzle('/x')).toEqual({ ok: false, reason: 'missing' });
+    expect(await loadPuzzle('/x')).toEqual({ ok: false, reason: 'offline' });
+    vi.stubGlobal('fetch', reply('', 503));
+    expect(await loadPuzzle('/x')).toEqual({ ok: false, reason: 'offline' });
   });
 
   it('unsupported: unknown rulesVersion', async () => {
@@ -72,12 +77,14 @@ describe('loadUnlimitedIndex', () => {
     }
   });
 
-  it('missing: 404, HTML, network error', async () => {
+  it('missing: 404, HTML; offline: network error, 5xx', async () => {
     vi.stubGlobal('fetch', reply('', 404));
     expect(await loadUnlimitedIndex()).toEqual({ ok: false, reason: 'missing' });
     vi.stubGlobal('fetch', reply('<html>'));
     expect(await loadUnlimitedIndex()).toEqual({ ok: false, reason: 'missing' });
     vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new Error('x'))));
-    expect(await loadUnlimitedIndex()).toEqual({ ok: false, reason: 'missing' });
+    expect(await loadUnlimitedIndex()).toEqual({ ok: false, reason: 'offline' });
+    vi.stubGlobal('fetch', reply('', 500));
+    expect(await loadUnlimitedIndex()).toEqual({ ok: false, reason: 'offline' });
   });
 });

@@ -4,28 +4,35 @@ type Level = wordpathV1.Level;
 
 export type LoadResult =
   | { ok: true; puzzle: wordpathV1.PuzzleBody; solutions: Record<number, number[]> }
-  | { ok: false; reason: 'missing' | 'invalid' | 'unsupported' };
+  | { ok: false; reason: 'missing' | 'offline' | 'invalid' | 'unsupported' };
 
 export type IndexResult =
   | { ok: true; count: Record<Level, number> }
-  | { ok: false; reason: 'missing' | 'invalid' };
+  | { ok: false; reason: 'missing' | 'offline' | 'invalid' };
 
 export const dailyUrl = (date: string) => `/wordpath/${date}.json`;
 export const unlimitedUrl = (level: Level, n: number) => `/wordpath/unlimited/${level}/${n}.json`;
 
-/** Network error, non-OK status, or a body that is not JSON (an SPA fallback page) all read as missing. */
-async function fetchJson(url: string): Promise<{ data: unknown } | null> {
+/** A thrown fetch or a 5xx is `offline` (try again later); any other non-OK status, or a body that is not JSON (an SPA fallback page), is `missing`. */
+async function fetchJson(url: string): Promise<{ data: unknown } | 'missing' | 'offline'> {
+  let res: Response;
   try {
-    const res = await fetch(url);
-    return res.ok ? { data: await res.json() } : null;
+    res = await fetch(url);
   } catch {
-    return null;
+    return 'offline';
+  }
+  if (res.status >= 500) return 'offline';
+  if (!res.ok) return 'missing';
+  try {
+    return { data: await res.json() };
+  } catch {
+    return 'missing';
   }
 }
 
 export async function loadPuzzle(url: string): Promise<LoadResult> {
   const body = await fetchJson(url);
-  if (!body) return { ok: false, reason: 'missing' };
+  if (typeof body === 'string') return { ok: false, reason: body };
   const { data } = body;
   const rulesVersion = typeof data === 'object' && data !== null ? (data as { rulesVersion?: unknown }).rulesVersion : undefined;
   if (typeof rulesVersion === 'string' && rulesVersion !== wordpathV1.RULES_VERSION) {
@@ -37,7 +44,7 @@ export async function loadPuzzle(url: string): Promise<LoadResult> {
 
 export async function loadUnlimitedIndex(): Promise<IndexResult> {
   const body = await fetchJson('/wordpath/unlimited/index.json');
-  if (!body) return { ok: false, reason: 'missing' };
+  if (typeof body === 'string') return { ok: false, reason: body };
   const raw = (body.data as { count?: Record<string, unknown> } | null)?.count;
   const count = {} as Record<Level, number>;
   for (const level of wordpathV1.LEVELS) {

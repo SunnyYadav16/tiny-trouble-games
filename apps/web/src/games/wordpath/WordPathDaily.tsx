@@ -47,8 +47,8 @@ export function WordPathDaily({ now, onBack, onUnlimited }: Props) {
     let live = true;
     void loadPuzzle(dailyUrl(date)).then((r) => {
       if (!live) return;
-      if (!r.ok && active && date < today) {
-        // An earlier day's session that cannot be finished must not hold today; today's own session stays, and the next open retries.
+      if (!r.ok && r.reason !== 'offline' && active && date < today) {
+        // An earlier day's session that cannot be finished must not hold today; today's own session stays, and so does any session through a network failure. The next open retries.
         clearActive(DAILY.active);
         const results = loadResults(DAILY.results);
         setPlan({ date: today, active: null, done: results[`wp-${today}`] ?? null, drop: false });
@@ -108,6 +108,8 @@ export function WordPathDaily({ now, onBack, onUnlimited }: Props) {
         onUnlimited={onUnlimited}
       />
     );
+  } else if (load?.reason === 'offline') {
+    body = <EmptyPlot title="Couldn't load the puzzle" text="Check your connection and try again." onBack={onBack} />;
   } else if (load) {
     body = <EmptyPlot title="This puzzle won't open" text="Something is wrong with this puzzle file. Try again in a little while." onBack={onBack} />;
   }

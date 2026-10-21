@@ -187,6 +187,19 @@ describe('WordPathDaily', () => {
     expect(localStorage.getItem('ttg:wordpath:active')).toBeNull();
   });
 
+  it.each([
+    ['the network fails', () => Promise.reject(new TypeError('offline'))],
+    ['the server answers 503', () => Promise.resolve(new Response('', { status: 503 }))],
+  ])("keeps an earlier day's session when %s", async (_, fail) => {
+    const route = solve(NOV1, 7).slice(0, 2);
+    const state = { ...wordpathV1.initialState(), route, wrongAttempts: 1 };
+    saveActive(DAILY.active, { puzzleId: NOV1.id, date: '2026-11-01', size: 7, elapsedMs: 4000, state });
+    vi.stubGlobal('fetch', vi.fn(fail));
+    open();
+    await screen.findByRole('heading', { name: "Couldn't load the puzzle" });
+    expect(loadActive(DAILY.active)).toMatchObject({ puzzleId: NOV1.id, elapsedMs: 4000, state: { route, wrongAttempts: 1 } });
+  });
+
   it('removes an earlier day session that is already finished and plays today', async () => {
     saveResult(DAILY.results, { id: NOV1.id, date: '2026-11-01', outcome: 'solved', timeMs: 5000, wrongAttempts: 0, size: 7, level: 'normal' });
     saveActive(DAILY.active, { puzzleId: NOV1.id, date: '2026-11-01', size: 7, elapsedMs: 0, state: wordpathV1.initialState() });
@@ -206,7 +219,7 @@ describe('WordPathDaily', () => {
     saveActive(DAILY.active, { puzzleId: NOV2.id, date: '2026-11-02', size: 7, elapsedMs: 9000, state });
     vi.stubGlobal('fetch', vi.fn(fail));
     const first = open();
-    await screen.findByRole('heading', { name: 'No Word Path puzzle today' });
+    await screen.findByRole('heading', { name: "Couldn't load the puzzle" });
     expect(loadActive(DAILY.active)).toMatchObject({ elapsedMs: 9000, state: { route, wrongAttempts: 2 } });
     first.unmount();
 
