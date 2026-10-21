@@ -1,6 +1,6 @@
 import * as fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { randInt, rngFrom } from '../../shared/rng';
+import { mulberry32, randInt, rngFrom } from '../../shared/rng';
 import { generate, routesNear, seedFor, SIZES } from './generate';
 import { LEVELS, metrics, qualityProblems } from './quality';
 import { findRoutes } from './routes';
@@ -33,6 +33,14 @@ const REAL_HARD = [
 ];
 
 describe('generate', () => {
+  // Golden values taken from gen-1 before the v1 freeze: if the rng or the generator drifts, `gen-1` no longer names one output.
+  it('pins mulberry32(1) and the gen-1 grid for one fixed input', () => {
+    const next = mulberry32(1);
+    expect(Array.from({ length: 5 }, next)).toEqual([0.6270739405881613, 0.002735721180215478, 0.5274470399599522, 0.9810509674716741, 0.9683778982143849]);
+    const g = generate({ answer: 'MANGO', size: 6, level: 'normal', blocked: BLOCKED, seed: seedFor('golden', 6) });
+    expect(g).toEqual({ cells: 'MOGMOGNAMOAMNOMGNNMMMGONANMMAOMGGOGA', solution: [11, 10, 16, 15, 9], attempts: 1 });
+  });
+
   it('builds a grid where only the solution spells the answer or a blocked word', () => {
     fc.assert(
       fc.property(

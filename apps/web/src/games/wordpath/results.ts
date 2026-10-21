@@ -20,7 +20,7 @@ const isRecord = (v: unknown): v is ResultRecord =>
   (v.outcome === 'solved' || v.outcome === 'gave-up') &&
   isCount(v.timeMs) &&
   isCount(v.wrongAttempts) &&
-  isCount(v.size) &&
+  (wordpathV1.SIZES as readonly unknown[]).includes(v.size) &&
   wordpathV1.LEVELS.includes(v.level as wordpathV1.Level);
 
 /** One bad record, or a record filed under a key other than its id, discards the whole store. */

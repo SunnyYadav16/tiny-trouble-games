@@ -49,6 +49,13 @@ describe('results store', () => {
     expect(loadResults('r')).toEqual({});
   });
 
+  it('rejects a record whose size is not one the engine builds', () => {
+    for (const size of [5, 11, 7.5]) {
+      localStorage.setItem('r', JSON.stringify({ [rec().id]: rec({ size }) }));
+      expect(loadResults('r')).toEqual({});
+    }
+  });
+
   it('rejects a record stored under a key that is not its id', () => {
     localStorage.setItem('r', JSON.stringify({ other: rec() }));
     expect(loadResults('r')).toEqual({});

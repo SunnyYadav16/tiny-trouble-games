@@ -13,5 +13,5 @@ export function chooseProvider(env: Record<string, string | undefined>) {
   if (gemini) return { name: 'Gemini', proposer: GEMINI_PROPOSER_MODEL, reviewer: GEMINI_REVIEWER_MODEL, create: () => createGeminiLlm(gemini) };
   const anthropic = env.ANTHROPIC_API_KEY;
   if (anthropic) return { name: 'Anthropic', proposer: PROPOSER_MODEL, reviewer: REVIEWER_MODEL, create: () => createAnthropicLlm(anthropic) };
-  throw new Error('Set OPENROUTER_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY in the environment; keys are never read from a file.');
+  throw new Error('Set OPENROUTER_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY in the environment or in the git-ignored root .env.');
 }
