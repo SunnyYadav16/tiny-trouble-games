@@ -4,18 +4,18 @@ Five puzzle games, built one at a time. Each has a daily puzzle; Word Path also 
 
 - Word Path rules: [Word Path Spec v1.0-rc1](docs/superpowers/plans/Tiny%20Trouble%20Games_%20Word%20Path%20Spec%20v1.0-rc1.md). Source of truth for *what*, except where the plan's Decisions table departs from it.
 - Word Path plan: [docs/superpowers/plans/2026-10-18-word-path-v1.md](docs/superpowers/plans/2026-10-18-word-path-v1.md). Source of truth for *how*. Its Decisions table records every spec change the user approved.
-- Other games: [Games Spec v0.4.1](Tiny%20Trouble%20Games_%20Games%20Spec%20v0.4.1.md). Its §2 (Word Path) is superseded by the Word Path spec.
+- Other games: [Games Spec v0.4.1](Tiny-Trouble-Games-Spec-v0.4.1.md). Its §2 (Word Path) is superseded by the Word Path spec.
 - Never copy game rules into this file.
 
 ## Current phase
 
-**Word Path**, rebuilt from scratch (the first build was deleted on 2026-10-18). Plan approved on 2026-10-18 (preview screens, 3D pavers, petal shower, difficulty levels, Word Path page); no code yet. Coding starts only when the user says so.
+**Word Path** is built (engine, tools, web app, e2e and axe suites). Launch waits on two things: content fill (`pnpm content refill` to 30 dailies from today and 40 Unlimited puzzles per level, then `pnpm verify` green) and the Cloudflare Pages deploy (settings in README.md). The daily refill workflow (`refill.yml`) is not in the repo yet. `packages/engine/src/wordpath/v1/` is frozen: change a rule by adding `v2/`, never by editing it.
 
 One game at a time. Do not start, scaffold, or stub the next game until the current one has shipped. Update this section when a phase ends.
 
 | # | Game | Status |
 | --- | --- | --- |
-| 1 | Word Path | planned |
+| 1 | Word Path | built, launch pending |
 | 2 | Preview Shuffle | — |
 | 3 | Mirror Collapse | — |
 | 4 | Echo Lights | — |
@@ -27,8 +27,6 @@ pnpm workspace · Node ≥22 · TypeScript strict · Vite · React 19 · Vitest 
 
 ## Commands
 
-Each command exists once the plan task that adds it has landed.
-
 ```sh
 pnpm install
 pnpm test              # vitest run, all packages
@@ -36,10 +34,10 @@ pnpm lint              # oxlint
 pnpm typecheck         # tsc, every package
 pnpm dev               # web app
 pnpm build             # production web build (apps/web/dist)
-pnpm e2e               # Playwright + axe, desktop and phone projects
+pnpm e2e               # Playwright + axe, desktop (1440x900) and phone (390x844) projects
 pnpm wordlists build   # rebuild content/wordlists from upstream sources
-pnpm content refill    # AI fills missing dailies and grows the unlimited pool; --level easy|normal|hard fills just that level, --limit N stops after N puzzles; needs OPENROUTER_API_KEY (or GEMINI_API_KEY / ANTHROPIC_API_KEY)
-pnpm verify            # re-check every public puzzle, word list hashes, and the schedule
+pnpm content refill [--level easy|normal|hard] [--limit N]   # AI fills missing dailies and each Unlimited level; --level skips dailies; --limit caps new puzzles; needs OPENROUTER_API_KEY (or GEMINI_API_KEY / ANTHROPIC_API_KEY)
+pnpm verify            # re-check every public puzzle, word list hashes, and the schedule; fails while content is short
 pnpm bench             # generator timing per size
 ```
 
@@ -50,7 +48,7 @@ Run `pnpm lint && pnpm typecheck && pnpm test` before saying anything is done.
 ```
 packages/engine/          pure rules, route finder, generator, schemas. No DOM, no React, no runtime deps.
   src/shared/             seeded rng, grid helpers
-  src/wordpath/v1/        rules, routes, words, quality, generate, check, puzzle. Frozen once released.
+  src/wordpath/v1/        rules, routes, words, quality, generate, check, puzzle. Frozen.
 tools/wordlists/          builds the answer list and blocking list
 tools/generator/          puzzle store, candidate gates, verify and bench CLIs
 tools/content/            AI pipeline: proposer, reviewer, refill CLI
@@ -60,7 +58,7 @@ apps/web/                 React UI
   src/shared/             dates, safe storage, visibility timer, live region
   src/games/wordpath/
   e2e/                    Playwright specs
-.github/workflows/        ci.yml; refill.yml (daily AI refill, pushes to main)
+.github/workflows/        ci.yml (check, e2e, content jobs; also runs daily). refill.yml (daily AI refill) is planned, not added
 PRODUCT.md, DESIGN.md     impeccable product context and design system (DESIGN.md is written from the built UI)
 ```
 
@@ -90,6 +88,13 @@ PRODUCT.md, DESIGN.md     impeccable product context and design system (DESIGN.m
 - Proposer and reviewer are different models. Nothing is published unless every stage passes: deterministic gates; the reviewer finds every fact in the clue true and the clue not offensive (no source page, N26); the reviewer solves the clue blind with the answer as its first guess; the built puzzle verifies and replays at every size.
 - Tests never call a real model or the network. AI sits behind the `Llm` interface with a fake.
 - Read the `claude-api` skill for current model IDs and tool names before changing `anthropic.ts`; fetch current Gemini or OpenRouter API docs (Context7) before changing `gemini.ts` or `openrouter.ts`.
+
+### Tuned values (set during the build; the plan's Decisions table has the reasons)
+- Generator: up to 1,000 attempts per size (N22); after one route is found it plants near misses until the level's minimum is met (N23).
+- Content targets: 30 dailies ahead of today, 40 Unlimited puzzles per level, 7 more per level each day (`tools/generator/src/config.ts`; N19).
+- OpenRouter defaults are free models, JSON mode, low reasoning effort, 2,000-token cap; the run stops on a daily-limit, credit, key, or provider outage (N27).
+- `pnpm content refill --level` fills one Unlimited level only (N28).
+- CI: `check` (lint, typecheck, test, build), `e2e`, and `content` (`pnpm verify`, which fails while content is short). It also runs daily.
 
 ### Accessibility (every game)
 - Every action is a single tap/click and works from the keyboard: arrows move focus, Enter/Space activate, Escape clears, Tab reaches every button.
