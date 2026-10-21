@@ -72,4 +72,16 @@ describe('useVisibleTimer', () => {
     act(() => void vi.advanceTimersByTime(1000));
     expect(elapsed()).toBe(1000);
   });
+
+  it('never goes negative when the wall clock steps backward', () => {
+    render(<Probe initial={0} running />);
+    act(() => void vi.advanceTimersByTime(3000));
+    act(() => vi.setSystemTime(Date.now() - 60_000));
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(elapsed()).toBe(4000);
+    act(() => setVisibility('hidden'));
+    act(() => vi.setSystemTime(Date.now() - 60_000));
+    act(() => setVisibility('visible'));
+    expect(elapsed()).toBe(4000);
+  });
 });

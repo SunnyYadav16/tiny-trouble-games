@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { stubLayout } from '../../test/layout';
 import { makeTestPuzzle } from '../../test/testPuzzle';
 import { PuzzlePlayer } from './PuzzlePlayer';
-import type { ResultRecord } from './results';
+import { loadResults, saveResult, type ResultRecord } from './results';
 import { DAILY, loadActive, saveActive, type ActiveSession } from './session';
 
 const DATE = '2026-11-01';
@@ -123,6 +123,24 @@ describe('PuzzlePlayer saving', () => {
     expect(onDone.mock.lastCall![0]).toMatchObject({ id: puzzle.id, date: DATE, outcome: 'solved', wrongAttempts: 0, size: 7, level: 'normal' });
     expect(JSON.parse(localStorage.getItem(DAILY.results)!)[puzzle.id]).toEqual(onDone.mock.lastCall![0]);
     expect(loadActive(DAILY.active)).toBeNull();
+  });
+});
+
+describe('PuzzlePlayer clock', () => {
+  it('a solve after the wall clock steps backward saves a valid result and keeps the existing ones', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    stubLayout(338, 600, false);
+    const earlier: ResultRecord = { id: 'wp-2026-10-31', date: '2026-10-31', outcome: 'solved', timeMs: 9000, wrongAttempts: 0, size: 7, level: 'normal' };
+    saveResult(DAILY.results, earlier);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const { tiles, onDone } = play();
+    const route = solutions[7]!;
+    await user.click(tiles()[route[0]!]!);
+    vi.advanceTimersByTime(5000);
+    vi.setSystemTime(Date.now() - 3_600_000);
+    for (const c of route.slice(1)) await user.click(tiles()[c]!);
+    expect(onDone.mock.lastCall![0].timeMs).toBeGreaterThanOrEqual(5000);
+    expect(loadResults(DAILY.results)).toEqual({ [earlier.id]: earlier, [puzzle.id]: onDone.mock.lastCall![0] });
   });
 });
 
