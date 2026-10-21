@@ -120,7 +120,13 @@ describe('Board', () => {
     expect(board).toHaveAttribute('data-state', 'wrong');
     rerender({ routeState: 'revealed' });
     expect(board).toHaveAttribute('data-state', 'revealed');
-    expect(container.querySelector('polyline')).toBeInTheDocument();
+    expect(container.querySelector('polyline')).toBeNull();
+  });
+
+  it('draws a revealed route as one dot per segment, at the midpoint between tile centres', () => {
+    const { container } = setup({ route: [0, 1, 4, 7], routeState: 'revealed' });
+    const dots = [...container.querySelectorAll('.route circle')].map((c) => [c.getAttribute('cx'), c.getAttribute('cy')]);
+    expect(dots).toEqual([['46', '23'], ['69', '46'], ['69', '92']]);
   });
 
   describe('solve celebration', () => {

@@ -26,7 +26,7 @@
 .route polyline, .route line { fill: none; stroke: var(--lantern); stroke-linecap: round; stroke-linejoin: round; }
 .board[data-state="solved"] .route * { stroke: var(--leaf); }
 .board[data-state="revealed"] .route { z-index: 2; opacity: 1; }
-.board[data-state="revealed"] .route * { stroke: var(--cream); }
+.board[data-state="revealed"] .route circle { fill: var(--cream); stroke: rgb(0 0 0 / .55); stroke-width: 1px; }
 
 .tile {
   --d: calc(var(--t) * .095); /* paver depth: the side wall */
