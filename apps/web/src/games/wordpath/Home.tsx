@@ -1,5 +1,5 @@
 import { useGSAP } from '@gsap/react';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { localDateKey } from '../../shared/daily';
 import { Board } from './Board';
 import { EXAMPLE, EXAMPLE_FRAMES, EXAMPLE_LAST } from './example';
@@ -20,7 +20,7 @@ interface Props {
 
 const noop = () => {};
 
-/** The collection page (N7): one designed card per game. The whole Word Path card is one link to its page. */
+/** The collection page (N7): one designed card per game. The whole Word Path card is one click target, its Play link. */
 export function Home({ now, onOpen }: Props) {
   const [{ date, status, streak }] = useState(() => {
     const today = localDateKey(now());
@@ -48,7 +48,7 @@ export function Home({ now, onOpen }: Props) {
     if (tracing.current?.progress() === 1) setRun((n) => n + 1);
   };
 
-  const streakText = streak > 0 ? ` ${streak}-day streak.` : '';
+  const ids = useId();
   return (
     <>
       <header className="bar">
@@ -68,32 +68,34 @@ export function Home({ now, onOpen }: Props) {
             <Board size={EXAMPLE.size} tile={wide ? 70 : 52} cells={EXAMPLE.cells} route={EXAMPLE_FRAMES[frame]!.route} routeState="active" disabled onTap={noop} />
             <span className="cap">{EXAMPLE.word}, in one path</span>
           </div>
-          {/* Its ::after covers the whole card, so the art panel is part of the click target without sitting inside the link. */}
-          <a
-            className="gc-body"
-            href="#wordpath"
-            aria-label={`Word Path. ${dayLabel(date, true)}: ${status}.${streakText} Open to play.`}
-            onClick={(e) => {
-              e.preventDefault();
-              onOpen();
-            }}
-            onMouseEnter={retrace}
-            onFocus={retrace}
-          >
+          <div className="gc-body">
             <h2>Word Path</h2>
             <p className="desc">Read the clue, then trace the one path of touching tiles that spells the answer.</p>
             <div className="gc-status">
-              <span>{dayLabel(date, wide)}</span>
+              <span id={`${ids}-date`}>{dayLabel(date, wide)}</span>
               <span aria-hidden="true">·</span>
-              <b>{status}</b>
+              <b id={`${ids}-status`}>{status}</b>
               <span className="grow" />
-              {streak > 0 && <StreakPill streak={streak} />}
+              {streak > 0 && <StreakPill streak={streak} id={`${ids}-streak`} />}
             </div>
-            <span className="gc-go">
-              Play Word Path
-              <Icon d={NEXT} />
-            </span>
-          </a>
+            {/* Its ::after covers the whole card, so the card is one click target. Its name is its own visible text (WCAG 2.5.3); the status line describes it. */}
+            <a
+              className="gc-link"
+              href="#wordpath"
+              aria-describedby={`${ids}-date ${ids}-status${streak > 0 ? ` ${ids}-streak` : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                onOpen();
+              }}
+              onMouseEnter={retrace}
+              onFocus={retrace}
+            >
+              <span className="gc-go">
+                Play Word Path
+                <Icon d={NEXT} />
+              </span>
+            </a>
+          </div>
         </div>
         <p className="later">More puzzles from this collection are on the way.</p>
       </main>

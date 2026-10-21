@@ -23,9 +23,9 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('Home', () => {
   it('shows one game card, titled, with a 16-tile preview hidden from keyboard and screen readers', () => {
-    const { container, card } = open();
+    const { container } = open();
     expect(screen.getAllByRole('link')).toHaveLength(1);
-    expect(within(card()).getByRole('heading', { name: 'Word Path' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Word Path' })).toBeInTheDocument();
     const tiles = [...container.querySelectorAll<HTMLElement>('.tile')];
     expect(tiles.map((t) => t.textContent).join('')).toBe(EXAMPLE.cells);
     expect(tiles.every((t) => t.tabIndex === -1 && t.closest('[aria-hidden="true"]'))).toBe(true);
@@ -43,35 +43,38 @@ describe('Home', () => {
 
   it('reads "Not played yet" before today is started, with no streak', () => {
     const { card } = open();
-    expect(within(card()).getByText('Not played yet')).toBeInTheDocument();
-    expect(card()).toHaveAccessibleName('Word Path. Monday, November 2: Not played yet. Open to play.');
+    expect(screen.getByText('Not played yet')).toBeInTheDocument();
+    expect(card()).toHaveAccessibleName('Play Word Path'); // WCAG 2.5.3: the name is the link's visible text
+    expect(card()).toHaveAccessibleDescription('Mon, Nov 2 Not played yet');
   });
 
   it('reads "In progress" when today is saved unfinished', () => {
     saveActive(DAILY.active, { puzzleId: 'wp-2026-11-02', date: '2026-11-02', size: 7, elapsedMs: 9_000, state: wordpathV1.initialState() });
     const { card } = open();
-    expect(within(card()).getByText('In progress')).toBeInTheDocument();
+    expect(screen.getByText('In progress')).toBeInTheDocument();
+    expect(card()).toHaveAccessibleDescription('Mon, Nov 2 In progress');
   });
 
   it('labels an earlier day\'s unfinished session with that day, not today', () => {
     saveActive(DAILY.active, { puzzleId: 'wp-2026-10-19', date: '2026-10-19', size: 7, elapsedMs: 9_000, state: wordpathV1.initialState() });
     const { card } = open();
-    expect(card()).toHaveAccessibleName('Word Path. Monday, October 19: In progress. Open to play.');
-    expect(within(card()).getByText('Mon, Oct 19')).toBeInTheDocument();
+    expect(card()).toHaveAccessibleDescription('Mon, Oct 19 In progress');
+    expect(screen.getByText('Mon, Oct 19')).toBeInTheDocument();
   });
 
   it('reads "Solved in 0:41" with the streak once today is solved', () => {
     saveResult(DAILY.results, rec('2026-11-01', { timeMs: 70_000 }));
     saveResult(DAILY.results, rec('2026-11-02'));
     const { card } = open();
-    expect(within(card()).getByText('Solved in 0:41')).toBeInTheDocument();
-    expect(card()).toHaveAccessibleName('Word Path. Monday, November 2: Solved in 0:41. 2-day streak. Open to play.');
+    expect(screen.getByText('Solved in 0:41')).toBeInTheDocument();
+    expect(card()).toHaveAccessibleDescription('Mon, Nov 2 Solved in 0:41 2-day streak');
   });
 
   it('reads "Gave up" for a given-up daily', () => {
     saveResult(DAILY.results, rec('2026-11-02', { outcome: 'gave-up' }));
     const { card } = open();
-    expect(within(card()).getByText('Gave up')).toBeInTheDocument();
+    expect(screen.getByText('Gave up')).toBeInTheDocument();
+    expect(card()).toHaveAccessibleDescription('Mon, Nov 2 Gave up');
   });
 
   it('opens how to play from the top bar', async () => {

@@ -20,7 +20,7 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
     expect(screen.getByRole('heading', { level: 1, name: 'Tiny Trouble Games' })).toBeInTheDocument();
-    await user.click(screen.getByRole('link', { name: /^Word Path\./ }));
+    await user.click(screen.getByRole('link', { name: 'Play Word Path' }));
     await page();
     await user.click(screen.getByRole('button', { name: 'Play daily' }));
     expect(await screen.findByRole('heading', { name: 'No Word Path puzzle today' })).toBeInTheDocument();
@@ -33,8 +33,8 @@ describe('App', () => {
   it('opens an unlimited level from the page, and Back returns to the page', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('link', { name: /^Word Path\./ }));
-    const hard = await screen.findByRole('button', { name: /^Play Hard\./ });
+    await user.click(screen.getByRole('link', { name: 'Play Word Path' }));
+    const hard = await screen.findByRole('button', { name: 'Play Hard' });
     await vi.waitFor(() => expect(hard).toBeEnabled());
     await user.click(hard);
     expect(screen.getByText('Unlimited · Hard')).toBeInTheDocument();
@@ -49,7 +49,7 @@ describe('App', () => {
     vi.stubGlobal('fetch', vi.fn(async (url: string) => (url.endsWith('index.json') ? new Response('', { status: 404 }) : Response.json(puzzle))));
     const user = userEvent.setup();
     const { container } = render(<App />);
-    await user.click(screen.getByRole('link', { name: /^Word Path\./ }));
+    await user.click(screen.getByRole('link', { name: 'Play Word Path' }));
     await user.click(await screen.findByRole('button', { name: 'Play daily' }));
     await screen.findByText(puzzle.clue);
     await waitFor(() => expect(container.querySelectorAll('.tile')).toHaveLength(49));
@@ -61,7 +61,7 @@ describe('App', () => {
     const user = userEvent.setup();
     const { container } = render(<App />);
     expect(document.body).toHaveFocus();
-    await user.click(screen.getByRole('link', { name: /^Word Path\./ }));
+    await user.click(screen.getByRole('link', { name: 'Play Word Path' }));
     await page();
     entered(container);
     expect(screen.getByRole('heading', { level: 1, name: 'Word Path' })).toHaveFocus();

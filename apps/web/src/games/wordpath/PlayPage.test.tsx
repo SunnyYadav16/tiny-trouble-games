@@ -25,8 +25,8 @@ function open() {
 }
 
 const today = () => screen.getByRole('region', { name: "Today's puzzle" });
-const level = (name: RegExp) => screen.getByRole('button', { name });
-const levels = () => ['Easy', 'Normal', 'Hard'].map((n) => level(new RegExp(`^(Play|Continue)? ?${n}\\.`)));
+const level = (name: string | RegExp) => screen.getByRole('button', { name });
+const levels = () => ['Easy', 'Normal', 'Hard'].map((n) => level(new RegExp(`^((Play|Continue) ${n}|${n}\\. Coming soon\\.)$`)));
 
 beforeEach(() => {
   localStorage.setItem(SEEN, 'true');
@@ -79,17 +79,18 @@ describe('PlayPage', () => {
     await waitFor(() => expect(levels().every((b) => !(b as HTMLButtonElement).disabled)).toBe(true));
     for (const b of levels()) await userEvent.click(b);
     expect(onUnlimited.mock.calls.map(([l]) => l)).toEqual(['easy', 'normal', 'hard']);
-    expect(level(/^Play Easy\./)).toHaveAccessibleName(/A gentle path with a bend or two, and plain clues\./);
-    expect(level(/^Play Normal\./)).toHaveAccessibleName(/Twistier paths, a few false trails, and clues that hint\. Same as the daily\./);
-    expect(level(/^Play Hard\./)).toHaveAccessibleName(/The path turns at every tile, with many false trails and clues from an odd angle\./);
+    // WCAG 2.5.3: each button's name holds its visible text; the rest of the row describes it.
+    expect(level('Play Easy')).toHaveAccessibleDescription(/^A gentle path with a bend or two, and plain clues\. /);
+    expect(level('Play Normal')).toHaveAccessibleDescription(/^Twistier paths, a few false trails, and clues that hint\. Same as the daily\. /);
+    expect(level('Play Hard')).toHaveAccessibleDescription(/^The path turns at every tile, with many false trails and clues from an odd angle\. /);
   });
 
   it('reads Continue with "In progress" for a level with a saved puzzle', async () => {
     saveActive(unlimitedKeys('normal').active, session('2026-11-02'));
     open();
-    const normal = await screen.findByRole('button', { name: /^Continue Normal\./ });
+    const normal = await screen.findByRole('button', { name: 'Continue Normal' });
     expect(within(normal.closest('.lvl')!).getByText('In progress')).toBeInTheDocument();
-    expect(within(level(/^Play Easy\./).closest('.lvl')!).queryByText('In progress')).toBeNull();
+    expect(within(level('Play Easy').closest('.lvl')!).queryByText('In progress')).toBeNull();
   });
 
   it('shows solved count and average time per level', () => {
@@ -99,16 +100,16 @@ describe('PlayPage', () => {
     saveResult(results, rec({ id: 'e3', level: 'easy', outcome: 'gave-up' }));
     saveResult(results, rec({ id: 'h1', level: 'hard', timeMs: 245_000 }));
     open();
-    expect(level(/^Play Easy\./)).toHaveAccessibleName(/2 solved, average 0:56\.$/);
-    expect(level(/^Play Normal\./)).toHaveAccessibleName(/None solved yet\.$/);
-    expect(level(/^Play Hard\./)).toHaveAccessibleName(/1 solved, average 4:05\.$/);
+    expect(level('Play Easy')).toHaveAccessibleDescription(/ 2 solved · 0:56 average$/);
+    expect(level('Play Normal')).toHaveAccessibleDescription(/ None solved yet$/);
+    expect(level('Play Hard')).toHaveAccessibleDescription(/ 1 solved · 4:05 average$/);
   });
 
   it('disables a level with no puzzles as "Coming soon"', async () => {
     serveIndex({ easy: 40, normal: 40, hard: 0 });
     open();
-    const hard = await screen.findByRole('button', { name: /^Hard\..*Coming soon\.$/ });
-    await waitFor(() => expect(level(/^Play Easy\./)).toBeEnabled());
+    const hard = await screen.findByRole('button', { name: 'Hard. Coming soon.' });
+    await waitFor(() => expect(level('Play Easy')).toBeEnabled());
     expect(hard).toBeDisabled();
     expect(within(hard).getByText('Coming soon')).toBeInTheDocument();
     expect(screen.queryByText("Unlimited puzzles aren't ready yet")).toBeNull();
@@ -118,9 +119,9 @@ describe('PlayPage', () => {
     saveActive(unlimitedKeys('hard').active, session('2026-11-02'));
     serveIndex({ easy: 40, normal: 40, hard: 0 });
     open();
-    const hard = await screen.findByRole('button', { name: /^Continue Hard\./ });
+    const hard = await screen.findByRole('button', { name: 'Continue Hard' });
     expect(hard).toBeEnabled();
-    expect(within(hard).getByText('In progress')).toBeInTheDocument();
+    expect(within(hard.closest('.lvl')!).getByText('In progress')).toBeInTheDocument();
     expect(within(hard).queryByText('Coming soon')).toBeNull();
     expect(hard).not.toHaveAccessibleName(/Coming soon/);
   });
@@ -130,10 +131,10 @@ describe('PlayPage', () => {
     serveIndex(null);
     open();
     expect(await screen.findByText("Unlimited puzzles aren't ready yet")).toBeInTheDocument();
-    const normal = screen.getByRole('button', { name: /^Continue Normal\./ });
+    const normal = screen.getByRole('button', { name: 'Continue Normal' });
     expect(normal).toBeEnabled();
     expect(within(normal).queryByText('Coming soon')).toBeNull();
-    expect(screen.getByRole('button', { name: /^Easy\..*Coming soon\.$/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Easy. Coming soon.' })).toBeDisabled();
   });
 
   it('disables all three when there is no unlimited index', async () => {

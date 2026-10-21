@@ -1,5 +1,5 @@
 /* Home (N7): the collection page with one designed game card. Phone first; the card goes side by side from 900px.
-   The top bar and streak pill are Header.css's. The card's link (.gc-body) stretches over the whole card with ::after. */
+   The top bar and streak pill are Header.css's. The card's Play link (.gc-link) stretches over the whole card with ::after. */
 
 .bar .mark { width: 30px; height: 30px; flex: none; }
 
@@ -10,7 +10,7 @@
   border: 1px solid var(--ink); outline: 1px solid var(--ink); outline-offset: 5px; background: var(--stone);
   transition: outline-offset var(--dur-ui) var(--ease-out), box-shadow var(--dur-ui) var(--ease-out);
 }
-.gamecard:has(.gc-body:focus-visible) { outline: 3px solid var(--focus); outline-offset: 8px; }
+.gamecard:has(.gc-link:focus-visible) { outline: 3px solid var(--focus); outline-offset: 8px; }
 
 /* the art panel is a hedge band itself, so the example's own band steps aside and the plot sits on the hedge */
 .gamecard .gc-art {
@@ -22,9 +22,10 @@
 .gc-art .plot { box-shadow: inset 0 2px 6px rgb(0 0 0 / .5), 0 0 0 6px rgb(0 0 0 / .18); }
 .gc-art .cap { color: var(--on-hedge); opacity: .78; font-size: var(--text-sm); font-weight: 600; letter-spacing: .05em; }
 
-.gc-body { display: flex; flex-direction: column; gap: 14px; padding: 20px 18px; color: inherit; text-decoration: none; cursor: pointer; }
-.gc-body::after { content: ""; position: absolute; inset: -7px; z-index: 1; }
-.gc-body:focus-visible { outline: none; } /* the card carries the ring */
+.gc-body { display: flex; flex-direction: column; gap: 14px; padding: 20px 18px; }
+.gc-link { display: grid; color: inherit; text-decoration: none; }
+.gc-link::after { content: ""; position: absolute; inset: -7px; z-index: 1; }
+.gc-link:focus-visible { outline: none; } /* the card carries the ring */
 .gc-body h2 { margin: 0; font-size: 50px; line-height: .92; font-weight: 750; font-variation-settings: "wdth" 80, "opsz" 96; letter-spacing: -.035em; }
 .gc-body .desc { margin: 0; max-width: 32ch; font-size: 16px; line-height: 1.4; text-wrap: pretty; }
 
@@ -43,7 +44,7 @@
   transition: transform var(--dur-press) var(--ease-out);
 }
 .gc-go svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--dur-ui) var(--ease-out); }
-.gc-body:active .gc-go { transform: scale(.97); }
+.gc-link:active .gc-go { transform: scale(.97); }
 
 .later { margin: 0; font-size: 14px; color: var(--ink-2); text-align: center; }
 
@@ -53,7 +54,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gc-body:active .gc-go { transform: none; background: var(--hedge-hi); }
+  .gc-link:active .gc-go { transform: none; background: var(--hedge-hi); }
   .gamecard:hover .gc-go svg { transform: none; }
 }
 
@@ -65,5 +66,5 @@
   .gc-body h2 { font-size: clamp(56px, 6vw, 84px); }
   .gc-body .desc { font-size: 20px; }
   .gc-status { font-size: 15px; }
-  .gc-go { align-self: flex-start; }
+  .gc-link { align-self: flex-start; }
 }

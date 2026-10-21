@@ -15,8 +15,8 @@ interface Props {
 }
 
 /** "4-day streak" in a pill; a phone shows the number and keeps the words for screen readers. */
-export const StreakPill = ({ streak }: { streak: number }) => (
-  <span className="streak">
+export const StreakPill = ({ streak, id }: { streak: number; id?: string }) => (
+  <span className="streak" id={id}>
     <Icon d={FLAME} />
     <span>
       {streak}

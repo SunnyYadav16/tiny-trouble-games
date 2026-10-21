@@ -100,37 +100,41 @@ export function PlayPage({ now, onBack, onDaily, onUnlimited }: Props) {
               const resume = saved.has(level);
               const off = index !== null && !resume && (!index.ok || index.count[level] === 0);
               const go = resume ? 'Continue' : 'Play';
-              const record = solved ? `${solved} solved, average ${avg}.` : 'None solved yet.';
+              const id = `${unlId}-${level}`;
               return (
                 <div className="lvl" key={level} data-off={off || undefined}>
                   <div className="mini" aria-hidden="true" inert>
                     <Board size={4} tile={wide ? 22 : 15} cells={BLANK} route={route} routeState="active" disabled onTap={noop} />
                   </div>
+                  {/* The row's text is for the eye; the button names (WCAG 2.5.3: its own visible text) and describes the row for assistive tech. */}
+                  <span className="txt" aria-hidden="true">
+                    <span className="name">
+                      {name}
+                      {resume && <span className="tag">In progress</span>}
+                    </span>
+                    <span className="desc" id={`${id}-desc`}>
+                      {desc}
+                    </span>
+                    <span className="stat" id={`${id}-stat`}>
+                      {off && 'Coming soon · '}
+                      {solved ? `${solved} solved · ${avg} average` : 'None solved yet'}
+                    </span>
+                  </span>
+                  <span className="nums" aria-hidden="true">
+                    <span>Solved</span>
+                    <b>{solved}</b>
+                    <span>Average</span>
+                    <b>{solved ? avg : '–'}</b>
+                  </span>
                   {/* Its ::after covers the whole row, plot included. */}
                   <button
                     type="button"
                     className="lvl-btn"
                     disabled={(index === null && !resume) || off}
-                    aria-label={off ? `${name}. ${desc} ${record} Coming soon.` : `${go} ${name}. ${desc} ${record}`}
+                    aria-label={off ? `${name}. Coming soon.` : `${go} ${name}`}
+                    aria-describedby={`${id}-desc ${id}-stat`}
                     onClick={() => onUnlimited(level)}
                   >
-                    <span className="txt">
-                      <span className="name">
-                        {name}
-                        {resume && <span className="tag">In progress</span>}
-                      </span>
-                      <span className="desc">{desc}</span>
-                      <span className="stat">
-                        {off && 'Coming soon · '}
-                        {solved ? `${solved} solved · ${avg} average` : 'None solved yet'}
-                      </span>
-                    </span>
-                    <span className="nums">
-                      <span>Solved</span>
-                      <b>{solved}</b>
-                      <span>Average</span>
-                      <b>{solved ? avg : '–'}</b>
-                    </span>
                     {off ? (
                       <span className="go soon">Coming soon</span>
                     ) : (
