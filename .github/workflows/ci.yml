@@ -3,6 +3,9 @@ name: CI
 on:
   push:
   pull_request:
+  schedule:
+    # Daily, so a content shortfall or a stale word list shows up without a push.
+    - cron: '17 6 * * *'
 
 jobs:
   check:
@@ -33,3 +36,16 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
         working-directory: apps/web
       - run: pnpm e2e
+
+  # Apart from `check` so a content shortfall shows here and does not mask code failures.
+  content:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
