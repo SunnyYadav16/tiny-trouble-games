@@ -18,7 +18,7 @@
   --rule: rgb(24 35 28 / .2); --rule-faint: rgb(24 35 28 / .05);
   --hedge: #24402E; --hedge-hi: #3A6247; --soil: #19211B;
   --on-hedge: #EEF1E6; --scrim: rgb(20 28 22 / .46);
-  --good-ink: #2F7A43; --warn: #7A1F2E;
+  --good-ink: #2F7A43; --warn: #7A1F2E; --warn-ink: #7A1F2E; /* warn-ink: small alert icons, brighter in dark */
   --focus: var(--ink); /* 3:1 or better on stone (lantern is ~1.8:1 in light) */
 
   /* tiles: pinned (spec 7.3), identical in light and dark */
@@ -52,7 +52,7 @@
     --rule: rgb(228 232 219 / .2); --rule-faint: rgb(228 232 219 / .035);
     --hedge: #2A4733; --hedge-hi: #3E6A4C; --soil: #0D120F;
     --scrim: rgb(0 0 0 / .55);
-    --good-ink: #7CC48F; --warn: #C2566A;
+    --good-ink: #7CC48F; --warn: #C2566A; --warn-ink: #E58A9B;
     --focus: var(--lantern);
   }
 }
@@ -88,8 +88,9 @@ body {
 .iconbtn {
   width: 44px; height: 44px; display: grid; place-items: center;
   border-radius: var(--radius-lg); border: 0; background: transparent; color: var(--ink); cursor: pointer;
-  transition: background-color var(--dur-hover) ease;
+  transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-hover) ease;
 }
+.iconbtn:active { transform: scale(0.97); }
 .iconbtn svg, .btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 
 .btn {
@@ -113,7 +114,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .btn:active { transform: none; background: var(--stone-2); }
+  .btn:active, .iconbtn:active { transform: none; background: var(--stone-2); }
   .btn.primary:active { background: var(--hedge-hi); }
 }
 

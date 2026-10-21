@@ -54,7 +54,7 @@ export function ResultScreen({ mode, result, clue, answer, onUnlimited, onNext, 
         {solved ? 'Solved' : 'Gave up'}
       </h2>
       <p className="visually-hidden">The answer is {answer}.</p>
-      <div aria-hidden="true">
+      <div className="res-stones" data-fresh={focus || undefined} aria-hidden="true">
         <Stones text={answer} length={answer.length} kind={solved ? 'solved' : 'revealed'} okLabel="" />
       </div>
       <p className="res-clue">{clue}</p>

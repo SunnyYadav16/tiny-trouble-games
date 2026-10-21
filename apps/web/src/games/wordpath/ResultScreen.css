@@ -8,6 +8,16 @@
 .res-h:focus-visible { outline: 3px solid var(--focus); outline-offset: 6px; border-radius: var(--radius-sm); }
 .res-clue { margin: 0; max-width: 36ch; font-size: var(--text-md); line-height: 1.45; color: var(--ink-2); }
 
+/* the stones line up with the heading and clue on every width */
+.result .stones { justify-content: flex-start; }
+/* a fresh solve: the check settles in just after the route turns green; a reopened result is static */
+.res-stones[data-fresh] .ok { animation: ok-in var(--dur-ui) var(--ease-out) 150ms both; }
+@keyframes ok-in { from { opacity: 0; transform: scale(.95); } }
+@keyframes ok-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .res-stones[data-fresh] .ok { animation: ok-fade 150ms ease both; }
+}
+
 /* time and wrong tries, side by side and never added together */
 .ledger { display: grid; grid-template-columns: repeat(2, auto); justify-content: start; margin: 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
 .ledger div { padding: 14px 28px 14px 0; margin-right: 28px; border-right: 1px solid var(--rule); }

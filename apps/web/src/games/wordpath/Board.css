@@ -63,8 +63,12 @@
 /* finished board: the route stands out, the rest steps back */
 .board:is([data-state="solved"], [data-state="revealed"]) .tile:not([data-selected]) .paver { opacity: .55; }
 
+/* hover lift: its own timing (150 ms ease, also under reduced motion); the press keeps the paver's 120 ms */
 @media (hover: hover) {
-  .tile:not([data-selected]):not([aria-disabled="true"]):hover .paver { transform: translateY(calc(var(--d) * -1)); }
+  .tile:not([data-selected]):not([aria-disabled="true"]):hover .paver {
+    transform: translateY(calc(var(--d) * -1));
+    transition: transform var(--dur-hover) ease, box-shadow var(--dur-hover) ease, opacity var(--dur-ui) ease;
+  }
 }
 
 /* keyboard focus: a cream ring around the whole tile, readable on dark soil */

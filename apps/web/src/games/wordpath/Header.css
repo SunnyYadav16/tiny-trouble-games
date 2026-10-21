@@ -20,14 +20,10 @@
   flex: none; display: flex; align-items: center; gap: 12px; padding: 9px 28px;
   background: var(--stone-3); border-bottom: 1px solid var(--rule); font-size: 14.5px; line-height: 1.4;
 }
-.strip .warn { display: flex; color: var(--warn); }
+.strip .warn { display: flex; color: var(--warn-ink); }
 .strip .warn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 .strip .btn.dismiss { flex: none; height: 34px; margin-left: auto; padding: 0 12px; font-size: 14px; }
 .strip .dismiss svg { display: none; }
-
-@media (prefers-color-scheme: dark) {
-  .strip .warn { color: #E58A9B; } /* the mockup's dark alert tint: --warn is too dim for a small icon here */
-}
 
 @media (max-width: 899.98px) {
   .bar { height: 54px; padding: 0 12px; gap: 6px; }
