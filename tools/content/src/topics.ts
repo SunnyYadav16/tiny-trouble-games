@@ -1,4 +1,5 @@
 import { randInt, rngFrom, shuffle, wordpathV1 } from '@ttg/engine';
+import { DAY_MS } from '@ttg/generator/config';
 
 export const TOPICS: readonly string[] = [
   'food', 'animals', 'weather', 'music', 'sports', 'geography', 'tools', 'plants', 'space', 'the human body',
@@ -8,7 +9,6 @@ export const TOPICS: readonly string[] = [
 
 /** One fixed order, so every topic is used once before any repeats. */
 const ORDER = shuffle(rngFrom('topics-v1'), TOPICS);
-const DAY_MS = 86_400_000;
 const at = (i: number) => ORDER[i % ORDER.length]!;
 
 /**

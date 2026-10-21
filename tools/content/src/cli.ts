@@ -1,6 +1,6 @@
 import { parseArgs } from 'node:util';
 import { wordpathV1 } from '@ttg/engine';
-import { UNLIMITED_INITIAL } from '@ttg/generator/config';
+import { localToday, UNLIMITED_INITIAL } from '@ttg/generator/config';
 import { loadLists, loadStore } from '@ttg/generator/io';
 import type { Llm } from './llm';
 import { chooseProvider } from './provider';
@@ -32,7 +32,7 @@ try {
 // Names and model IDs only: never a key or a request header.
 console.log(`provider ${provider.name}: proposer ${provider.proposer}, reviewer ${provider.reviewer}`);
 
-const today = new Date().toLocaleDateString('en-CA'); // local YYYY-MM-DD
+const today = localToday();
 const { lists, version } = loadLists();
 const report = await refill({ llm, today, lists, version, limit, level, log: console.log });
 

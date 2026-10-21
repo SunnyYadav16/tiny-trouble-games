@@ -44,14 +44,14 @@ describe('minLetterCount', () => {
 
 describe('longestRun', () => {
   it('counts the most cells in one straight line', () => {
-    expect(longestRun([0, 1, 2, 8], 6)).toBe(3);
-    expect(longestRun([0, 6, 12, 13, 14, 15], 6)).toBe(4);
+    expect(longestRun([0, 1, 2, 8])).toBe(3);
+    expect(longestRun([0, 6, 12, 13, 14, 15])).toBe(4);
   });
 
   it('handles tiny routes', () => {
-    expect(longestRun([], 6)).toBe(0);
-    expect(longestRun([4], 6)).toBe(1);
-    expect(longestRun([4, 5], 6)).toBe(2);
+    expect(longestRun([])).toBe(0);
+    expect(longestRun([4])).toBe(1);
+    expect(longestRun([4, 5])).toBe(2);
   });
 });
 

@@ -22,7 +22,7 @@ export function minLetterCount(size: number, distinct: number): number {
 }
 
 /** Most cells in one straight line of consecutive steps. */
-export function longestRun(route: readonly number[], _size: number): number {
+export function longestRun(route: readonly number[]): number {
   if (route.length < 2) return route.length;
   let best = 2;
   let run = 2;
@@ -53,7 +53,7 @@ export function metrics(
   return {
     nearMisses,
     falseStarts: [...cells].filter((letter) => letter === answer[0]).length,
-    routeTurns: turns(solution, size),
+    routeTurns: turns(solution),
   };
 }
 
@@ -62,9 +62,9 @@ export function routeShapeProblems(size: number, route: readonly number[], level
   const rules = LEVEL_RULES[level];
   const problems: string[] = [];
   const neededTurns = Math.min(rules.turns[column(size)], route.length - 2);
-  const routeTurns = turns(route, size);
+  const routeTurns = turns(route);
   if (routeTurns < neededTurns) problems.push(`route has ${routeTurns} turns, needs ${neededTurns}`);
-  const run = longestRun(route, size);
+  const run = longestRun(route);
   if (run > rules.maxRun) problems.push(`route runs ${run} tiles straight, max ${rules.maxRun}`);
   return problems;
 }

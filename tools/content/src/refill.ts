@@ -1,6 +1,6 @@
 import { wordpathV1 } from '@ttg/engine';
 import { buildPuzzle } from '@ttg/generator/build';
-import { AHEAD_DAYS, unlimitedTarget } from '@ttg/generator/config';
+import { AHEAD_DAYS, DAY_MS, unlimitedTarget } from '@ttg/generator/config';
 import { candidateProblems, type Candidate } from '@ttg/generator/gates';
 import { loadStore, nextUnlimitedId, saveDaily, saveUnlimited, usedAnswers } from '@ttg/generator/io';
 import { LlmAuthError, type Llm } from './llm';
@@ -41,7 +41,6 @@ interface Slot {
   date?: string;
 }
 
-const DAY_MS = 86_400_000;
 export const addDays = (date: string, days: number) => new Date(Date.parse(date) + days * DAY_MS).toISOString().slice(0, 10);
 
 /**

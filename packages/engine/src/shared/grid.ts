@@ -19,12 +19,8 @@ export function sameRoute(a: readonly number[], b: readonly number[]): boolean {
   return a.length === b.length && a.every((cell, i) => cell === b[i]);
 }
 
-/**
- * Number of direction changes along a route of adjacent cells. The step between
- * cells (+-1 or +-size) already identifies the direction, so size is unused; it
- * stays in the signature so callers read like the other grid helpers.
- */
-export function turns(route: readonly number[], _size: number): number {
+/** Number of direction changes along a route of adjacent cells; the step between cells (+-1 or +-size) is the direction. */
+export function turns(route: readonly number[]): number {
   let count = 0;
   for (let i = 2; i < route.length; i++) {
     if (route[i]! - route[i - 1]! !== route[i - 1]! - route[i - 2]!) count++;

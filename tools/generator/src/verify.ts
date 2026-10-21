@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { wordpathV1 } from '@ttg/engine';
-import { AHEAD_DAYS, UNLIMITED_INITIAL } from './config';
+import { AHEAD_DAYS, localToday, UNLIMITED_INITIAL } from './config';
 import { loadLists, loadStore, WORDLIST_DIR, type Store } from './io';
 
 /** One line per problem in the whole store; an empty array means it is healthy. */
@@ -63,7 +63,7 @@ export function listHashProblems(dir = WORDLIST_DIR): string[] {
 }
 
 function main(): void {
-  const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in the local zone
+  const today = localToday();
   let problems: string[];
   try {
     const { lists, version } = loadLists();

@@ -4,7 +4,10 @@ export const AHEAD_DAYS = 30;
 export const UNLIMITED_INITIAL = 40;
 export const UNLIMITED_PER_DAY = 7;
 
-const DAY_MS = 86_400_000;
+export const DAY_MS = 86_400_000;
+
+/** Today as YYYY-MM-DD in the local zone. */
+export const localToday = () => new Date().toLocaleDateString('en-CA');
 
 /** Puzzles each level should hold: `started` and `today` are YYYY-MM-DD. */
 export function unlimitedTarget(started: string, today: string): number {

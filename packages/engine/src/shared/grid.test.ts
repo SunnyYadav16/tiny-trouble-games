@@ -22,7 +22,7 @@ describe('grid helpers', () => {
   });
 
   it('turns', () => {
-    expect(turns([0, 1, 2, 3, 4], 6)).toBe(0); // straight
-    expect(turns([0, 1, 7, 8], 6)).toBe(2); // right, down, right
+    expect(turns([0, 1, 2, 3, 4])).toBe(0); // straight
+    expect(turns([0, 1, 7, 8])).toBe(2); // right, down, right
   });
 });
