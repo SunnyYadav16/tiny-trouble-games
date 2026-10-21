@@ -7,6 +7,7 @@ import { buildPuzzle } from '@ttg/generator/build';
 import type { Candidate } from '@ttg/generator/gates';
 import { loadStore, saveDaily, saveUnlimited, usedAnswers } from '@ttg/generator/io';
 import { LlmAuthError, LlmQuotaError, LlmUnavailableError, type Llm, type Review } from './llm';
+import { storeProblems } from '@ttg/generator/verify';
 import { addDays, refill } from './refill';
 
 type Level = wordpathV1.Level;
@@ -92,6 +93,22 @@ describe('refill', () => {
     const again = fakes();
     expect(await again.run()).toEqual({ created: [], failed: [], rejections: { propose: 0, gates: 0, review: 0, solve: 0, build: 0 } });
     expect(again.log).toEqual([]);
+  });
+
+  it('fills the lowest missing unlimited number after a middle file is deleted, then the later levels', async () => {
+    seed();
+    rmSync(join(dir, 'unlimited/easy/2.json'));
+    rmSync(join(dir, 'unlimited/normal/40.json'));
+    const f = fakes();
+    const report = await f.run();
+    expect(report.created).toEqual(['wp-u-easy-2', 'wp-u-normal-40']);
+    expect(report.failed).toEqual([]);
+    const store = loadStore(dir);
+    expect(JSON.parse(readFileSync(join(dir, 'unlimited/easy/2.json'), 'utf8')).id).toBe('wp-u-easy-2');
+    expect(store.unlimited.easy).toHaveLength(40);
+    expect(store.unlimited.normal).toHaveLength(40);
+    // The seed reuses one answer, so verify's duplicate-answer lines are expected; numbering and index lines are not.
+    expect(storeProblems(store, lists, 'test-1', TODAY).filter((l) => /: expected |index\.json: |unlimited puzzles, need/.test(l))).toEqual([]);
   });
 
   it('adds exactly 14 per level two days after the start', async () => {

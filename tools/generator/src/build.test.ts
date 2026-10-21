@@ -113,6 +113,15 @@ describe('store', () => {
     expect(nextUnlimitedId(store, 'easy')).toBe('wp-u-easy-1');
   });
 
+  it('hands out the lowest missing unlimited number, not the file count', () => {
+    for (const n of [1, 3]) saveUnlimited(make(mango, `wp-u-normal-${n}`), '2026-10-20', dir);
+    const store = loadStore(dir);
+    expect(nextUnlimitedId(store, 'normal')).toBe('wp-u-normal-2');
+    saveUnlimited(make(cloud, 'wp-u-normal-2'), '2026-10-21', dir);
+    expect(readFileSync(join(dir, 'unlimited/normal/2.json'), 'utf8')).toContain('wp-u-normal-2');
+    expect(nextUnlimitedId(loadStore(dir), 'normal')).toBe('wp-u-normal-4');
+  });
+
   it('collects uppercase answers of dailies and unlimited', () => {
     saveDaily(make(mango, 'wp-2026-11-01', 'normal', '2026-11-01'), dir);
     saveUnlimited(make(cloud, 'wp-u-normal-1'), '2026-10-20', dir);

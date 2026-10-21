@@ -85,14 +85,22 @@ export function saveDaily(p: PuzzleBody, dir = PUBLIC_DIR): void {
   createJson(join(dir, `${p.date}.json`), p);
 }
 
+const numberOf = (id: string) => Number(/-(\d+)$/.exec(id)?.[1]);
+
+/** The lowest number no puzzle in the level holds, so a deleted file's slot is refilled before the pool grows. */
 export function nextUnlimitedId(store: Store, level: Level): string {
-  return `wp-u-${level}-${store.unlimited[level].length + 1}`;
+  const taken = new Set(store.unlimited[level].map((p) => numberOf(p.id)));
+  let n = 1;
+  while (taken.has(n)) n++;
+  return `wp-u-${level}-${n}`;
 }
 
-/** Writes the next numbered file for the puzzle's level, then rewrites index.json (`started` is set once). */
+/** Writes the file numbered by the puzzle's id (`wp-u-<level>-<n>` is `<n>.json`), then rewrites index.json (`started` is set once). */
 export function saveUnlimited(p: PuzzleBody, today: string, dir = PUBLIC_DIR): void {
   const { level } = p.meta;
-  createJson(join(dir, 'unlimited', level, `${jsonFiles(join(dir, 'unlimited', level)).length + 1}.json`), p);
+  const n = numberOf(p.id);
+  if (!Number.isInteger(n) || n < 1) throw new Error(`${p.id}: not an unlimited id`);
+  createJson(join(dir, 'unlimited', level, `${n}.json`), p);
   const count = Object.fromEntries(
     wordpathV1.LEVELS.map((l) => [l, jsonFiles(join(dir, 'unlimited', l)).length]),
   );
